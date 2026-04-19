@@ -1,5 +1,14 @@
 package instrument
 
+// Risk register note (M1 v1.2):
+//
+// R_B3 (sharer consistency memory growth) has been REMOVED from the B-phase
+// risk table and relocated to PHASE C pilot 선결 확인 항목 (open questions).
+// Rationale: regionSharerSets growth is bounded by the number of distinct
+// (regionTag, cachelineOffset) pairs accessed per phase; under realistic
+// workloads this is proportional to working-set size, not unbounded.
+// Measurement deferred to PHASE C pilot run — not a blocking B-phase risk.
+
 import (
 	"fmt"
 
