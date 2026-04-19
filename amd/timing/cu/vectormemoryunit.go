@@ -242,6 +242,18 @@ func (u *VectorMemoryUnit) sendRequest() bool {
 
 		tracing.TraceReqInitiate(req, u.cu, info.Inst.ID)
 
+		addr := uint64(0)
+		if info.Read != nil {
+			addr = info.Read.Address
+		} else {
+			addr = info.Write.Address
+		}
+		u.cu.InvokeHook(sim.HookCtx{
+			Domain: u.cu,
+			Pos:    HookPosCUVectorMemAccess,
+			Detail: CUVectorMemAccessDetail{Addr: addr},
+		})
+
 		return true
 	}
 

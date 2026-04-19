@@ -21,11 +21,47 @@ import "fmt"
 //	Read(gpu):  if no entry → Insert; sharers ∪= {gpu}; state=Valid.
 //	Write(gpu): if no entry → Insert; Invalidate others; sharers={gpu}; state=Valid.
 //	No Modified state (single-level VI, matches MGPUSim's baseline protocol).
+// SharerEventKind identifies the type of SharerEvent fired by PlainVIDirectory.
+type SharerEventKind uint8
+
+const (
+	// SharerEventKindSharerUpdate fires when a region's sharer set is updated.
+	SharerEventKindSharerUpdate SharerEventKind = iota
+	// SharerEventKindWriteInvalidate fires on write-init invalidation (OpWrite).
+	SharerEventKindWriteInvalidate
+	// SharerEventKindEvictInvalidate fires on eviction-init invalidation (Invalidate call).
+	// Under InfiniteCapacity (V11) this must never fire in practice.
+	SharerEventKindEvictInvalidate
+)
+
+// SharerEvent is emitted by PlainVIDirectory on every sharer-set mutation.
+// Registered callbacks receive this event; see AddCallback.
+type SharerEvent struct {
+	Kind            SharerEventKind
+	RegionTag       uint64      // AddressMapper.EntryTag(addr)
+	CachelineOffset uint32      // AddressMapper.SubOffset(addr) for Update events
+	Sharers         SharerSet   // sharer set after the operation (Update events only)
+}
+
 type PlainVIDirectory struct {
-	cfg     DirectoryConfig
-	mapper  AddressMapper
-	entries map[uint64]*Entry // key: AddressMapper.EntryTag(addr)
-	stats   DirectoryStats
+	cfg       DirectoryConfig
+	mapper    AddressMapper
+	entries   map[uint64]*Entry // key: AddressMapper.EntryTag(addr)
+	stats     DirectoryStats
+	callbacks []func(SharerEvent)
+}
+
+// AddCallback registers cb to be called on every SharerEvent fired by this
+// directory. Callbacks are invoked synchronously in registration order.
+// Safe to call only before simulation starts (no mutex; SerialEngine guarantee).
+func (d *PlainVIDirectory) AddCallback(cb func(SharerEvent)) {
+	d.callbacks = append(d.callbacks, cb)
+}
+
+func (d *PlainVIDirectory) fireCallbacks(e SharerEvent) {
+	for _, cb := range d.callbacks {
+		cb(e)
+	}
 }
 
 // NewPlainVIDirectory creates a PlainVIDirectory from cfg.
@@ -149,10 +185,21 @@ func (d *PlainVIDirectory) UpdateSharers(addr uint64, gpu GPUID, op Op) error {
 		// If there were other sharers, they are invalidated.
 		if e.Sharers.Len() > 0 && !(e.Sharers.Len() == 1 && e.Sharers.Contains(gpu)) {
 			d.stats.Invalidations++
+			d.fireCallbacks(SharerEvent{
+				Kind:      SharerEventKindWriteInvalidate,
+				RegionTag: tag,
+			})
 		}
 		e.Sharers = SharerSet(0).Add(gpu)
 		e.IsDirty = true
 	}
+
+	d.fireCallbacks(SharerEvent{
+		Kind:            SharerEventKindSharerUpdate,
+		RegionTag:       tag,
+		CachelineOffset: uint32(d.mapper.SubOffset(addr)),
+		Sharers:         e.Sharers,
+	})
 	return nil
 }
 
@@ -174,6 +221,10 @@ func (d *PlainVIDirectory) Invalidate(addr uint64, excludeGPU GPUID) error {
 		e.IsDirty = false
 		e.Sharers = 0
 		d.stats.Invalidations++
+		d.fireCallbacks(SharerEvent{
+			Kind:      SharerEventKindEvictInvalidate,
+			RegionTag: tag,
+		})
 		return nil
 	}
 
@@ -190,6 +241,10 @@ func (d *PlainVIDirectory) Invalidate(addr uint64, excludeGPU GPUID) error {
 		e.IsValid = false
 	}
 	d.stats.Invalidations++
+	d.fireCallbacks(SharerEvent{
+		Kind:      SharerEventKindEvictInvalidate,
+		RegionTag: tag,
+	})
 	return nil
 }
 
