@@ -26,15 +26,13 @@ type Entry struct {
 	// the region since the last writeback.
 	IsDirty bool
 
-	// Sharers is the set of remote ports that currently hold a copy of any
-	// cache line within this region. The baseline (v1.2) maintains the set
-	// at region granularity — this is the whole point of the region-size
-	// sweep: larger R lumps more sharers into one set.
+	// Sharers is the set of GPUs that currently hold a valid cached copy of
+	// any cache line within this region. Stored as a SharerSet bitmap
+	// (uint32); supports up to 32 GPUs (MaxBitmapGPUID=31, r9nano uses 0-15).
 	//
-	// Stored as []uint32 of port IDs rather than []sim.RemotePort to avoid
-	// importing akita types into the pure-data package; the directory
-	// implementation translates at its boundary.
-	Sharers []uint32
+	// No akita sim.RemotePort dependency: the directory implementation maps
+	// port→GPUID at its adapter boundary; this package is stdlib-only.
+	Sharers SharerSet
 
 	// AccessBitmap is a per-cacheline access bitmap for the region.
 	// Bit i is set when the i-th cache line (i in [0, CachelinesPerRegion))
@@ -52,7 +50,7 @@ func (e *Entry) Reset() {
 	e.PID = 0
 	e.IsValid = false
 	e.IsDirty = false
-	e.Sharers = e.Sharers[:0]
+	e.Sharers = 0
 	for i := range e.AccessBitmap {
 		e.AccessBitmap[i] = false
 	}

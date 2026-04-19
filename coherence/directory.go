@@ -201,3 +201,55 @@ func (c DirectoryConfig) AssertNoEviction(dirEvictions uint64) error {
 	}
 	return nil
 }
+
+// ─── Directory interface ────────────────────────────────────────────────────
+
+// Directory is the minimal interface that all coherence directory
+// implementations must satisfy in the M1 experiment framework.
+//
+// Design principles (B-0.1):
+//   1. No REC-specific methods (coalesce, positionBits, subEntry lookup).
+//      Those belong to the REC implementation type only (PHASE 2 P1).
+//   2. All operations keyed by raw addr, not by pre-computed tag; the
+//      implementation calls AddressMapper internally so callers cannot
+//      accidentally pass a stale or wrong-granularity tag.
+//   3. Stats() returns the counters for Invariant V11 and sanity checks.
+//
+// Reviewer attack: "Why not reuse akita's existing Directory interface?"
+// Defense: akita's interface (mem/cache/directory.go) exposes set/way
+// internals (GetSets, FindVictim) that are meaningless for an infinite
+// directory and that tie callers to a finite set-associative model.
+// This interface is the clean slice needed by M1; PHASE 2 P1 will provide
+// adapters for REC/HMG behind the same interface for fair comparison.
+type Directory interface {
+	// Lookup returns the entry for the region containing addr, or (nil, false)
+	// on a miss. The returned pointer is valid until the next mutating call;
+	// callers must not retain it across operations.
+	Lookup(addr uint64) (*Entry, bool)
+
+	// Insert creates a new entry for the region containing addr with the given
+	// initial sharer set. Returns an error if an entry already exists (the
+	// caller must Lookup first). Under InfiniteCapacity, Insert never evicts.
+	Insert(addr uint64, initialSharers SharerSet) error
+
+	// UpdateSharers records a coherence access (read or write) by gpu on the
+	// region containing addr. For OpWrite, all sharers except gpu are
+	// invalidated first (VI write-invalidate protocol).
+	UpdateSharers(addr uint64, gpu GPUID, op Op) error
+
+	// Invalidate removes all sharers EXCEPT excludeGPU from the region.
+	// If excludeGPU == InvalidGPUID, ALL sharers are removed and the entry
+	// becomes invalid (full invalidation / flush).
+	//
+	// Typical usage: a write-invalidate passes the writer as excludeGPU so
+	// only the writer survives; a page-migration flush passes InvalidGPUID.
+	// No-op if the region has no entry (already invalid).
+	Invalidate(addr uint64, excludeGPU GPUID) error
+
+	// Stats returns a snapshot of the cumulative counters. The returned value
+	// is a copy; subsequent operations do not affect it.
+	Stats() DirectoryStats
+}
+
+// InvalidGPUID is the sentinel value meaning "no GPU" (e.g., Invalidate all).
+const InvalidGPUID GPUID = ^GPUID(0)
