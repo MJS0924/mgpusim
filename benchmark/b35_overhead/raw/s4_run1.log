@@ -1,0 +1,2924 @@
+Monitoring simulation with http://localhost:44935
+Build Timing Platform
+[MMU Builder]	MMU built with PageMigrationPolicy=0
+[Driver Builder]	Driver built with PageMigrationPolicy=0
+[r9nano Builder]	Creating GPU Builder with log2CacheLineSize 6, log2PageSize 12 coherenceDirectory 0.
+
+Create GPU 1
+[Directory]	Build new coherence directory: 1024 sets, 8 ways, 8192 entries
+[GMMU Builder]	GPU 1 GMMU built with PageMigrationPolicy=0
+2026/04/20 02:23:31 /root/mgpusim_home/mgpusim/benchmark/b35_overhead/main.go:58: [B-3.5] scenario=s4
+2026/04/20 02:23:31 /root/mgpusim_home/mgpusim/benchmark/b35_overhead/main.go:117: [B-3.5] S4: L2Adapter + full CUAdapter on 64 CUs
+[MemoryAllocator]	1056784 Byte Request
+			Allocating 259 pages for pid 1 on device 1
+[MemoryAllocator]	1048576 Byte Request
+			Allocating 256 pages for pid 1 on device 1
+[MemoryAllocator]	36 Byte Request
+			Allocating 1 pages for pid 1 on device 1
+[Driver DEBUF 1]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 3]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 4]	queue len: 1, 2ndQueue len: 0
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[Warning]	No More Event: 0 0
+[Driver DEBUF 5]	Engine stops running
+[Driver DEBUF 1]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 3]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 4]	queue len: 1, 2ndQueue len: 0
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Received MemCopyH2DReq
+[Warning]	No More Event: 0 0
+[Driver DEBUF 5]	Engine stops running
+[Driver DEBUF 1]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 3]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 4]	queue len: 1, 2ndQueue len: 0
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[Warning]	No More Event: 0 0
+[Driver DEBUF 5]	Engine stops running
+[MemoryAllocator]	768 Byte Request
+			Allocating 1 pages for pid 1 on device 1
+[MemoryAllocator]	96 Byte Request
+			Allocating 1 pages for pid 1 on device 1
+[MemoryAllocator]	64 Byte Request
+			Allocating 1 pages for pid 1 on device 1
+[Driver DEBUF 1]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 3]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 4]	queue len: 1, 2ndQueue len: 0
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[Driver] Processing MemCopyH2DCommand
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[CP 1]	Received MemCopyH2DReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].CommandProcessor]	Kernel Complete
+[Warning]	No More Event: 0 0
+[Driver DEBUF 5]	Engine stops running
+[Driver DEBUF 1]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 3]	queue len: 1, 2ndQueue len: 0
+[Driver DEBUF 4]	queue len: 1, 2ndQueue len: 0
+[Driver] Processing MemCopyD2HCommand
+[Driver] Sending CohDir flush for command
+[CP 1]	Receive Coh Dir Flush Request from Drive
+			Send Flush Requests to Coh Dir
+[Driver]	Complete Coh Dir Flush
+		Send Cache Flush Request
+[CP 1]	Receive Cache Flush Request from Driver
+		Send Flush Requests to Caches
+		Send Flush Requests to L1I Caches: numACK: 16
+		Send Flush Requests to L1S Caches: numACK: 32
+		Send Flush Requests to L1V Caches: numACK: 96
+		Send Flush Requests to L2 Caches: numACK: 112
+[CP 1]	Complete Cache Flush
+		Send Cache Flush Response to Driver
+[Driver]	Complete Cache Flush
+[Driver] Processing MemCopyD2HCommand after Dir/Cache flush
+[Driver.MemCpy]	Append awaitingReqs to requestsToSend
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[Driver]	Success to send mem copy D2H req. to GPU[1].CommandProcessor.ToDriver
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[CP 1]	Received MemCopyD2HReq
+		Send request to DMA
+[GPU[1].DMA]	Received MemCopyH2DReq
+[GPU[1].DMA]	Complete to send read request to bottom(GPU[1].DRAM[15].TopPort)
+[Warning]	No More Event: 0 0
+[Driver DEBUF 5]	Engine stops running
+
+=== [GPU[1].CohDir] Cumulative Coalescability Report ===
+view       R(B)     avg_strict priv_coal  shar_coal  shar_str card1%   card2% card3%   card4+%  kernels 
+[WARNING][R6][GPU[1].CohDir] strict ratio < 30% in ALL (R x view). Pivot to Plan B/C required.
+=============================================
+
+Simulation Terminate
+B35_WALL_CLOCK scenario=s4 elapsed_ms=53393

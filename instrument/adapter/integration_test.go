@@ -13,7 +13,6 @@ import (
 	"github.com/sarchlab/akita/v4/mem/cache/writebackcoh"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
-	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
 	"github.com/sarchlab/mgpusim/v4/coherence"
 	"github.com/sarchlab/mgpusim/v4/instrument"
 )
@@ -85,17 +84,17 @@ func TestI3_CUAdapter_OnRegionAccess_AfterFetch(t *testing.T) {
 	}
 }
 
-// ─── I4: CUAdapter.OnInstructionRetired increments counter ───────────────────
+// ─── I4: CUAdapter.OnWavefrontRetired increments counter ───────────────────
 
-func TestI4_CUAdapter_OnInstructionRetired(t *testing.T) {
+func TestI4_CUAdapter_OnWavefrontRetired(t *testing.T) {
 	m := instrument.NewPhaseMetrics()
 	a := NewCUAdapter(m, defaultCfg)
 
-	a.OnInstructionRetired(3)
-	a.OnInstructionRetired(7)
+	a.OnWavefrontRetired(3)
+	a.OnWavefrontRetired(7)
 
-	if m.RetiredInstructions != 10 {
-		t.Errorf("I4: want RetiredInstructions=10; got %d", m.RetiredInstructions)
+	if m.RetiredWavefronts != 10 {
+		t.Errorf("I4: want RetiredWavefronts=10; got %d", m.RetiredWavefronts)
 	}
 }
 
@@ -320,19 +319,16 @@ func TestCUAdapter_Func_VectorMemAccess(t *testing.T) {
 	}
 }
 
-func TestCUAdapter_Func_WfCompletion(t *testing.T) {
+func TestCUAdapter_Func_WfRetired(t *testing.T) {
 	m := instrument.NewPhaseMetrics()
 	a := NewCUAdapter(m, defaultCfg)
 
-	evt := &wavefront.WfCompletionEvent{}
-	a.Func(sim.HookCtx{
-		Pos:  sim.HookPosBeforeEvent,
-		Item: evt,
-	})
+	a.Func(sim.HookCtx{Pos: cu.HookPosWfRetired})
+	a.Func(sim.HookCtx{Pos: cu.HookPosWfRetired})
 
-	if m.RetiredInstructions != 1 {
-		t.Errorf("CUAdapter.Func WfCompletion: want RetiredInstructions=1; got %d",
-			m.RetiredInstructions)
+	if m.RetiredWavefronts != 2 {
+		t.Errorf("CUAdapter.Func WfRetired: want RetiredWavefronts=2; got %d",
+			m.RetiredWavefronts)
 	}
 }
 

@@ -61,7 +61,9 @@ type PhaseMetrics struct {
 	// This field is informational; V11 enforcement is via
 	// coherence.DirectoryConfig.AssertNoEviction().
 	DirectoryEvictions  uint64
-	RetiredInstructions uint64
+	// RetiredWavefronts counts wavefronts that reached WfCompleted state this phase.
+	// Unit: wavefronts (not individual instructions). Each wavefront is 64 threads.
+	RetiredWavefronts uint64
 
 	// ── Intrinsic region-utilization metrics ─────────────────────────────
 	RegionFetchedBytes  uint64 // cumulative bytes fetched this phase
@@ -123,9 +125,9 @@ func (m *PhaseMetrics) AddL2Access(hit bool) {
 	}
 }
 
-// AddRetiredInstructions increments the retired-instruction counter by n.
-func (m *PhaseMetrics) AddRetiredInstructions(n uint64) {
-	m.RetiredInstructions += n
+// AddRetiredWavefronts increments the retired-wavefront counter by n.
+func (m *PhaseMetrics) AddRetiredWavefronts(n uint64) {
+	m.RetiredWavefronts += n
 }
 
 // AddInvalidation records one invalidation event by source.
@@ -274,7 +276,7 @@ func (m *PhaseMetrics) Flush() (PhaseMetrics, error) {
 		WriteInitInvalidations:  m.WriteInitInvalidations,
 		EvictInitInvalidations:  m.EvictInitInvalidations,
 		DirectoryEvictions:      m.DirectoryEvictions,
-		RetiredInstructions:     m.RetiredInstructions,
+		RetiredWavefronts:     m.RetiredWavefronts,
 		RegionFetchedBytes:      m.RegionFetchedBytes,
 		RegionAccessedBytes:     m.RegionAccessedBytes,
 		ActiveRegions:           m.ActiveRegions,
@@ -308,7 +310,7 @@ func (m *PhaseMetrics) resetInternal() {
 	m.WriteInitInvalidations = 0
 	m.EvictInitInvalidations = 0
 	m.DirectoryEvictions = 0
-	m.RetiredInstructions = 0
+	m.RetiredWavefronts = 0
 	m.RegionFetchedBytes = 0
 	m.RegionAccessedBytes = 0
 	m.ActiveRegions = 0

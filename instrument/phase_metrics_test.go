@@ -194,7 +194,7 @@ func TestM9_Reset_ClearsAll(t *testing.T) {
 	m := NewPhaseMetrics()
 	m.AddL2Access(true)
 	m.AddL2Access(false)
-	m.AddRetiredInstructions(100)
+	m.AddRetiredWavefronts(100)
 	m.AddInvalidation(InvSourceWriteInit)
 	m.AddDirectoryEviction()
 	m.AddAddrBucketAccess(0xDEAD)
@@ -214,8 +214,8 @@ func TestM9_Reset_ClearsAll(t *testing.T) {
 		t.Errorf("M9: L2 counters must be 0 after Reset; got H=%d M=%d",
 			m.L2Hits, m.L2Misses)
 	}
-	if m.RetiredInstructions != 0 {
-		t.Errorf("M9: RetiredInstructions must be 0; got %d", m.RetiredInstructions)
+	if m.RetiredWavefronts != 0 {
+		t.Errorf("M9: RetiredWavefronts must be 0; got %d", m.RetiredWavefronts)
 	}
 	if m.WriteInitInvalidations != 0 || m.DirectoryEvictions != 0 {
 		t.Errorf("M9: invalidation/eviction counters must be 0")
@@ -349,7 +349,7 @@ func TestCounterAccumulation(t *testing.T) {
 	m.AddInvalidation(InvSourceWriteInit)
 	m.AddInvalidation(InvSourceWriteInit)
 	m.AddInvalidation(InvSourceEvictInit)
-	m.AddRetiredInstructions(42)
+	m.AddRetiredWavefronts(42)
 
 	snap, err := m.Flush()
 	if err != nil {
@@ -367,8 +367,8 @@ func TestCounterAccumulation(t *testing.T) {
 	if snap.EvictInitInvalidations != 1 {
 		t.Errorf("EvictInitInvalidations: want 1; got %d", snap.EvictInitInvalidations)
 	}
-	if snap.RetiredInstructions != 42 {
-		t.Errorf("RetiredInstructions: want 42; got %d", snap.RetiredInstructions)
+	if snap.RetiredWavefronts != 42 {
+		t.Errorf("RetiredWavefronts: want 42; got %d", snap.RetiredWavefronts)
 	}
 }
 

@@ -3,7 +3,6 @@ package adapter
 import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
-	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
 	"github.com/sarchlab/mgpusim/v4/coherence"
 	"github.com/sarchlab/mgpusim/v4/instrument"
 )
@@ -45,9 +44,9 @@ func (a *CUAdapter) OnRegionAccess(addr uint64) {
 	}
 }
 
-// OnInstructionRetired increments the retired-instruction counter by n.
-func (a *CUAdapter) OnInstructionRetired(n uint64) {
-	a.metrics.AddRetiredInstructions(n)
+// OnWavefrontRetired increments the retired-wavefront counter by n.
+func (a *CUAdapter) OnWavefrontRetired(n uint64) {
+	a.metrics.AddRetiredWavefronts(n)
 }
 
 // WarningCount returns the number of V12 ordering warnings accumulated
@@ -58,15 +57,13 @@ func (a *CUAdapter) WarningCount() uint64 {
 
 // Func implements sim.Hook. It dispatches:
 //   - HookPosCUVectorMemAccess → OnRegionAccess
-//   - HookPosBeforeEvent + *wavefront.WfCompletionEvent → OnInstructionRetired(1)
+//   - HookPosWfRetired → OnWavefrontRetired(1)
 func (a *CUAdapter) Func(ctx sim.HookCtx) {
 	switch ctx.Pos {
 	case cu.HookPosCUVectorMemAccess:
 		d := ctx.Detail.(cu.CUVectorMemAccessDetail)
 		a.OnRegionAccess(d.Addr)
-	case sim.HookPosBeforeEvent:
-		if _, ok := ctx.Item.(*wavefront.WfCompletionEvent); ok {
-			a.OnInstructionRetired(1)
-		}
+	case cu.HookPosWfRetired:
+		a.OnWavefrontRetired(1)
 	}
 }
