@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/sarchlab/akita/v4/mem/mem"
+	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/insts"
 	"github.com/sarchlab/mgpusim/v4/amd/protocol"
@@ -293,6 +294,7 @@ func (s *SchedulerImpl) evalSEndPgm(
 		}
 
 		wf.State = wavefront.WfCompleted
+		s.invokeWfRetiredHook(wf)
 
 		s.resetRegisterValue(wf)
 		s.cu.clearWGResource(wf.WG)
@@ -308,6 +310,7 @@ func (s *SchedulerImpl) evalSEndPgm(
 		s.resetRegisterValue(wf)
 
 		wf.State = wavefront.WfCompleted
+		s.invokeWfRetiredHook(wf)
 
 		tracing.EndTask(wf.UID, s.cu)
 
@@ -318,6 +321,7 @@ func (s *SchedulerImpl) evalSEndPgm(
 		s.resetRegisterValue(wf)
 
 		wf.State = wavefront.WfCompleted
+		s.invokeWfRetiredHook(wf)
 
 		s.cu.logInstTask(wf, wf.DynamicInst(), true)
 		tracing.EndTask(wf.UID, s.cu)
@@ -522,4 +526,17 @@ func (s *SchedulerImpl) Resume() {
 func (s *SchedulerImpl) Flush() {
 	s.barrierBuffer = nil
 	s.internalExecuting = nil
+}
+
+// invokeWfRetiredHook fires HookPosWfRetired on the CU for the given wavefront.
+// Guard on NumHooks() avoids the slice iteration cost in simulations without hooks.
+func (s *SchedulerImpl) invokeWfRetiredHook(wf *wavefront.Wavefront) {
+	if s.cu.NumHooks() == 0 {
+		return
+	}
+	s.cu.InvokeHook(sim.HookCtx{
+		Domain: s.cu,
+		Pos:    HookPosWfRetired,
+		Item:   wf,
+	})
 }
