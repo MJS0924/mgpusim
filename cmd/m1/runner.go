@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sarchlab/akita/v4/mem/cache/writebackcoh"
@@ -50,9 +52,35 @@ func (h *clockHook) Func(ctx sim.HookCtx) {
 	h.clock.Tick(cycle)
 }
 
+// snapshotSqliteFiles returns the set of akita_sim_*.sqlite3 paths
+// currently present in the working directory.
+func snapshotSqliteFiles() map[string]struct{} {
+	matches, _ := filepath.Glob("akita_sim_*.sqlite3")
+	m := make(map[string]struct{}, len(matches))
+	for _, f := range matches {
+		m[f] = struct{}{}
+	}
+	return m
+}
+
+// cleanNewSqliteFiles deletes any akita_sim_*.sqlite3 files that were not
+// present in before. akita creates one per simulation run; they are only
+// useful for the daisen visualizer and are unwanted in the M1 output dir.
+func cleanNewSqliteFiles(before map[string]struct{}) {
+	after, _ := filepath.Glob("akita_sim_*.sqlite3")
+	for _, f := range after {
+		if _, existed := before[f]; !existed {
+			if err := os.Remove(f); err == nil {
+				log.Printf("[m1] removed akita trace file: %s", f)
+			}
+		}
+	}
+}
+
 // runM1 executes one full M1 measurement: wires adapters, runs workload,
 // flushes sink. Returns total phase count and summary metrics.
 func runM1(cfg *m1Config) error {
+	sqliteBefore := snapshotSqliteFiles()
 	r := new(runner.Runner).Init()
 
 	simObj := r.Simulation()
@@ -145,6 +173,8 @@ func runM1(cfg *m1Config) error {
 		v11, v12,
 		sink.Filepath(),
 	)
+
+	cleanNewSqliteFiles(sqliteBefore)
 
 	return nil
 }
