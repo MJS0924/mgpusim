@@ -18,3 +18,11 @@ func (s *InMemorySink) PushSnapshot(snap instrument.PhaseMetrics) error {
 	s.Snapshots = append(s.Snapshots, snap)
 	return nil
 }
+
+// PhaseResetable is implemented by adapters that maintain per-phase state
+// (e.g., L2Adapter.currentPhaseRegions dedup map). RegisterPhaseLifecycle
+// calls ResetPhase on each registered adapter at every phase boundary,
+// ensuring per-phase state is cleared before the new phase begins.
+type PhaseResetable interface {
+	ResetPhase()
+}
