@@ -34,6 +34,28 @@
 
 ---
 
+## Multi-GPU GPU-ID convention (from D.0 Path A, 2026-04-20)
+
+**Context**: `akita/mem/cache/optdirectory/coherencedirectory.go:340`
+contains a pre-existing bug `item |= 1 << (id - 2)` that panics when
+any GPU ID is 1 (introduced in akita commit `429ce443`, 2026-04-19,
+predates the B-phase M1 work).
+
+**Workaround adopted for PHASE C/D**: use `-gpus=2,3,4,5` (4 GPUs,
+IDs starting at 2). No mgpusim or M1-side code change required; M1
+adapters attach cleanly to all 4 L2 caches with this convention.
+
+**Phase 2 action**: apply the one-line akita fix (`id - minID`, or
+`if id < 2 { return }`) to `recordAccessMask`, then restore the
+canonical `-gpus=0,1,2,3` (or `1,2,3,4`) convention across all
+scripts and documents. Fix complexity: LOW (~1-5 lines in
+`coherencedirectory.go`; no REC/HMG dependency).
+
+Details and reproduction logs: `results/m1/multigpu_feasibility.md`
+and `results/m1/d0_probe/`.
+
+---
+
 ## Per-instruction retirement count (from B-3.6)
 
 **Context**: `PhaseMetrics.RetiredWavefronts` counts wavefronts reaching
