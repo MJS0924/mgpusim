@@ -220,18 +220,32 @@ func TestI9_L2Adapter_ResetPhase_ClearsDedup(t *testing.T) {
 	}
 }
 
-// ─── I10: CUAdapter increments warningCount when no prior fetch ──────────────
+// ─── I10: CUAdapter auto-registers region on access without prior fetch ──────
+// β extended 2026-04-20: access-before-fetch is the normal akita ordering
+// (CU hook fires before L2 hook), so CUAdapter auto-registers the region
+// rather than warning. warningCount stays 0 in well-formed runs.
 
-func TestI10_CUAdapter_WarningOnMissingFetch(t *testing.T) {
+func TestI10_CUAdapter_AutoRegisterOnMissingFetch(t *testing.T) {
 	m := instrument.NewPhaseMetrics()
 	a := NewCUAdapter(m, defaultCfg)
 
-	// No prior OnRegionFetch/OnL2Access → V12 layer 1 triggers → warningCount++.
 	a.OnRegionAccess(0x5000)
 	a.OnRegionAccess(0x6000)
 
-	if a.WarningCount() != 2 {
-		t.Errorf("I10: want warningCount=2; got %d", a.WarningCount())
+	if a.WarningCount() != 0 {
+		t.Errorf("I10: want warningCount=0 under β extended auto-register; got %d",
+			a.WarningCount())
+	}
+
+	snap, err := m.Flush()
+	if err != nil {
+		t.Fatalf("I10: unexpected Flush error: %v", err)
+	}
+	if snap.ActiveRegions != 2 {
+		t.Errorf("I10: want ActiveRegions=2 (auto-registered); got %d", snap.ActiveRegions)
+	}
+	if snap.RegionAccessedBytes == 0 {
+		t.Errorf("I10: want RegionAccessedBytes>0 after auto-register+access; got 0")
 	}
 }
 
@@ -253,6 +267,68 @@ func TestI11_L2Hit_TriggersRegionActivation(t *testing.T) {
 	}
 	if snap.L2Hits != 1 {
 		t.Errorf("I11: want L2Hits=1; got %d", snap.L2Hits)
+	}
+}
+
+// ─── I12: CUAdapter alone fully populates fetched + accessed bytes ───────────
+// β extended: CU access is sufficient to activate and account for a region.
+
+func TestI12_CUAdapter_AutoRegistersOnAccess(t *testing.T) {
+	m := instrument.NewPhaseMetrics()
+	a := NewCUAdapter(m, defaultCfg)
+
+	a.OnRegionAccess(0x1000)
+
+	if a.WarningCount() != 0 {
+		t.Errorf("I12: want warningCount=0; got %d", a.WarningCount())
+	}
+
+	snap, err := m.Flush()
+	if err != nil {
+		t.Fatalf("I12: unexpected Flush error: %v", err)
+	}
+	if snap.RegionFetchedBytes == 0 {
+		t.Error("I12: want RegionFetchedBytes>0 after auto-register; got 0")
+	}
+	if snap.RegionAccessedBytes == 0 {
+		t.Error("I12: want RegionAccessedBytes>0 after access; got 0")
+	}
+	if snap.ActiveRegions != 1 {
+		t.Errorf("I12: want ActiveRegions=1; got %d", snap.ActiveRegions)
+	}
+}
+
+// ─── I13: CU-first, L2-second on same region does NOT double-count ───────────
+// Simulates real akita ordering. L2Adapter must detect that the region is
+// already registered (via PhaseMetrics.IsRegionFetched) and skip its
+// AddRegionFetch, preserving RegionFetchedBytes = 1×regionSize and the CU
+// access bitmap.
+
+func TestI13_CUFirst_L2Second_NoDoubleCount(t *testing.T) {
+	cfg := testCfg(1024)
+	m := instrument.NewPhaseMetrics()
+	l2 := NewL2Adapter(m, cfg)
+	cuA := NewCUAdapter(m, cfg)
+
+	cuA.OnRegionAccess(0x0000) // CU first — auto-register + access
+	l2.OnL2Access(true, 0x0040) // L2 second — must NOT re-fetch
+
+	snap, err := m.Flush()
+	if err != nil {
+		t.Fatalf("I13: unexpected Flush error: %v", err)
+	}
+	if snap.RegionFetchedBytes != 1024 {
+		t.Errorf("I13: want RegionFetchedBytes=1024 (single register); got %d",
+			snap.RegionFetchedBytes)
+	}
+	if snap.ActiveRegions != 1 {
+		t.Errorf("I13: want ActiveRegions=1; got %d", snap.ActiveRegions)
+	}
+	if snap.RegionAccessedBytes == 0 {
+		t.Error("I13: CU access bit must survive L2 hit (no bitmap reset); got 0")
+	}
+	if cuA.WarningCount() != 0 {
+		t.Errorf("I13: want warningCount=0; got %d", cuA.WarningCount())
 	}
 }
 
