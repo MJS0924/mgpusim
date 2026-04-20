@@ -3,7 +3,6 @@ package adapter
 import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
-	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
 	"github.com/sarchlab/mgpusim/v4/coherence"
 	"github.com/sarchlab/mgpusim/v4/instrument"
 )
@@ -58,15 +57,13 @@ func (a *CUAdapter) WarningCount() uint64 {
 
 // Func implements sim.Hook. It dispatches:
 //   - HookPosCUVectorMemAccess → OnRegionAccess
-//   - HookPosBeforeEvent + *wavefront.WfCompletionEvent → OnInstructionRetired(1)
+//   - HookPosWfRetired → OnInstructionRetired(1)
 func (a *CUAdapter) Func(ctx sim.HookCtx) {
 	switch ctx.Pos {
 	case cu.HookPosCUVectorMemAccess:
 		d := ctx.Detail.(cu.CUVectorMemAccessDetail)
 		a.OnRegionAccess(d.Addr)
-	case sim.HookPosBeforeEvent:
-		if _, ok := ctx.Item.(*wavefront.WfCompletionEvent); ok {
-			a.OnInstructionRetired(1)
-		}
+	case cu.HookPosWfRetired:
+		a.OnInstructionRetired(1)
 	}
 }
