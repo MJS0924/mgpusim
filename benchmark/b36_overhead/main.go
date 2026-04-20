@@ -1,7 +1,7 @@
 // Package main is the B-3.6 overhead re-measurement harness.
 //
 // Identical to B-3.5 but uses the fixed HookPosWfRetired hook position so
-// that RetiredInstructions is correctly counted in S3 and S4.
+// that RetiredWavefronts is correctly counted in S3 and S4.
 //
 // Usage:
 //
@@ -44,7 +44,7 @@ func (h *wfRetireHook) Func(ctx sim.HookCtx) {
 		return
 	}
 	_ = ctx.Item.(*wavefront.Wavefront) // type-assert to confirm item type
-	h.metrics.AddRetiredInstructions(1)
+	h.metrics.AddRetiredWavefronts(1)
 }
 
 func main() {
@@ -128,12 +128,12 @@ func main() {
 	fmt.Printf("B36_WALL_CLOCK scenario=%s elapsed_ms=%.0f\n",
 		scenario, float64(elapsed.Milliseconds()))
 
-	fmt.Printf("B36_METRICS scenario=%s L2Hits=%d L2Misses=%d RegionFetchedBytes=%d RetiredInstructions=%d\n",
+	fmt.Printf("B36_METRICS scenario=%s L2Hits=%d L2Misses=%d RegionFetchedBytes=%d RetiredWavefronts=%d\n",
 		scenario,
 		m.L2Hits,
 		m.L2Misses,
 		m.RegionFetchedBytes,
-		m.RetiredInstructions,
+		m.RetiredWavefronts,
 	)
 }
 

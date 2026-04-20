@@ -84,17 +84,17 @@ func TestI3_CUAdapter_OnRegionAccess_AfterFetch(t *testing.T) {
 	}
 }
 
-// ─── I4: CUAdapter.OnInstructionRetired increments counter ───────────────────
+// ─── I4: CUAdapter.OnWavefrontRetired increments counter ───────────────────
 
-func TestI4_CUAdapter_OnInstructionRetired(t *testing.T) {
+func TestI4_CUAdapter_OnWavefrontRetired(t *testing.T) {
 	m := instrument.NewPhaseMetrics()
 	a := NewCUAdapter(m, defaultCfg)
 
-	a.OnInstructionRetired(3)
-	a.OnInstructionRetired(7)
+	a.OnWavefrontRetired(3)
+	a.OnWavefrontRetired(7)
 
-	if m.RetiredInstructions != 10 {
-		t.Errorf("I4: want RetiredInstructions=10; got %d", m.RetiredInstructions)
+	if m.RetiredWavefronts != 10 {
+		t.Errorf("I4: want RetiredWavefronts=10; got %d", m.RetiredWavefronts)
 	}
 }
 
@@ -326,9 +326,9 @@ func TestCUAdapter_Func_WfRetired(t *testing.T) {
 	a.Func(sim.HookCtx{Pos: cu.HookPosWfRetired})
 	a.Func(sim.HookCtx{Pos: cu.HookPosWfRetired})
 
-	if m.RetiredInstructions != 2 {
-		t.Errorf("CUAdapter.Func WfRetired: want RetiredInstructions=2; got %d",
-			m.RetiredInstructions)
+	if m.RetiredWavefronts != 2 {
+		t.Errorf("CUAdapter.Func WfRetired: want RetiredWavefronts=2; got %d",
+			m.RetiredWavefronts)
 	}
 }
 

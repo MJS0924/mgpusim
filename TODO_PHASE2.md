@@ -31,3 +31,26 @@
 ## PHASE 2 P1 기타 TODO
 
 - (placeholder for future PHASE 2 tasks)
+
+---
+
+## Per-instruction retirement count (from B-3.6)
+
+**Context**: `PhaseMetrics.RetiredWavefronts` counts wavefronts reaching
+`WfCompleted` state — one count per wavefront (= 64 threads). Sufficient for
+wavefront-level utilization analysis in PHASE 1.
+
+**If per-instruction granularity is needed**: the executed instruction count
+is not available at the `HookPosWfRetired` call site without additional
+bookkeeping. Options:
+
+1. **Hook detail**: define `WfRetiredDetail{InstructionCount uint64}` and pass
+   it as `ctx.Detail` from `invokeWfRetiredHook()`, reading from a per-wf
+   executed-instruction counter maintained in the issue stage.
+2. **Wavefront struct field**: add `ExecutedInstructions uint64` to
+   `wavefront.Wavefront`, increment at issue, read at retirement.
+3. **Approximation**: `RetiredWavefronts × avg_instructions_per_wavefront`
+   (workload-specific, not general).
+
+**Current decision**: wavefront count only. Revisit if the paper requires
+instruction-level CPI/IPC metrics.

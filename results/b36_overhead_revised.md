@@ -3,7 +3,7 @@
 **Date**: 2026-04-20  
 **Branch**: `m1-phase-b36-wfretired-hook`  
 **Binary**: `benchmark/b36_overhead/b36_overhead` (built 2026-04-20, same binary for all runs)  
-**Supersedes**: `results/b35_overhead.md` (RetiredInstructions was 0 due to WfCompletionEvent non-firing)
+**Supersedes**: `results/b35_overhead.md` (RetiredWavefronts was 0 due to WfCompletionEvent non-firing)
 
 ---
 
@@ -14,7 +14,7 @@
 | Wf retire hook position | `HookPosBeforeEvent` (WfCompletionEvent 감지) | `HookPosWfRetired` (evalSEndPgm 직접 발화) |
 | CUAdapter retire path | `*wavefront.WfCompletionEvent` type-assert | `cu.HookPosWfRetired` switch case |
 | S3 retire path | `wfRetireHook` → HookPosBeforeEvent | `wfRetireHook` → HookPosWfRetired |
-| RetiredInstructions (S3/S4) | **0** (버그) | **4129** (정상) |
+| RetiredWavefronts (S3/S4) | **0** (버그) | **4129** (정상) |
 
 ---
 
@@ -52,14 +52,14 @@
 
 ## B36_METRICS (canary — 모든 run에서 동일)
 
-| Scenario | L2Hits | L2Misses | RegionFetchedBytes | RetiredInstructions |
+| Scenario | L2Hits | L2Misses | RegionFetchedBytes | RetiredWavefronts |
 |----------|--------|----------|--------------------|---------------------|
 | S1 | 0 | 0 | 0 | 0 |
 | S2 | 51,062 | 32,908 | 2,106,112 | 0 |
 | S3 | 51,062 | 32,908 | 2,106,112 | **4,129** ✅ |
 | S4 | 51,062 | 32,908 | 2,106,112 | **4,129** ✅ |
 
-> **Canary 통과**: S3/S4 `RetiredInstructions=4129 > 0` — HookPosWfRetired 발화 확인.  
+> **Canary 통과**: S3/S4 `RetiredWavefronts=4129 > 0` — HookPosWfRetired 발화 확인.  
 > S1/S2 metrics=0 은 정상 (adapter 없음 / CU adapter 없음).
 
 ---

@@ -44,7 +44,7 @@ func (h *wfRetireHook) Func(ctx sim.HookCtx) {
 		return
 	}
 	if _, ok := ctx.Item.(*wavefront.WfCompletionEvent); ok {
-		h.metrics.AddRetiredInstructions(1)
+		h.metrics.AddRetiredWavefronts(1)
 	}
 }
 
@@ -133,6 +133,15 @@ func main() {
 
 	fmt.Printf("B35_WALL_CLOCK scenario=%s elapsed_ms=%.0f\n",
 		scenario, float64(elapsed.Milliseconds()))
+
+	// Print accumulated PhaseMetrics so raw logs prove adapters were firing.
+	fmt.Printf("B35_METRICS scenario=%s L2Hits=%d L2Misses=%d RegionFetchedBytes=%d RetiredWavefronts=%d\n",
+		scenario,
+		m.L2Hits,
+		m.L2Misses,
+		m.RegionFetchedBytes,
+		m.RetiredWavefronts,
+	)
 }
 
 func countL2(simObj interface {
