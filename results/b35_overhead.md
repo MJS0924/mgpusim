@@ -106,6 +106,17 @@ B-4 (batched flush, 별도 WfRetireHookPos) 등의 최적화는 현시점 불필
 
 ---
 
+## 측정 후 발견 사항 (B-3.6에서 수정됨)
+
+**RetiredInstructions=0 문제**: B-3.5 측정 시 S3/S4 모두 `RetiredInstructions=0` 출력.
+
+- **근본 원인**: `WfCompletionEvent`는 `-wf-sampling` 모드 또는 WG-completion-message retry 경로에서만 dispatch됨. 기본 timing simulation에서는 `Scheduler.evalSEndPgm()` 내 `wf.State = WfCompleted` 직접 대입으로 완료 처리 — 이벤트 없음.
+- **영향**: S3 `wfRetireHook` (HookPosBeforeEvent scan)과 S4 CUAdapter의 WfCompletion 감지 경로 모두 실제로 발화하지 않았음. 즉, S3/S4의 `RetiredInstructions` 집계가 무효.
+- **wall-clock 수치 유효성**: S1~S4 wall-clock 비율(S4/S1=1.021)은 여전히 overhead 판정에 유효. 이유: S3의 `HookPosBeforeEvent` scan은 실제로 실행됐지만 WfCompletion 감지를 못 했을 뿐 — hook dispatch 비용은 발생함. S4도 동일.
+- **수정**: B-3.6에서 `HookPosWfRetired` 추가, `evalSEndPgm()`의 3개 `wf.State = WfCompleted` 지점에서 InvokeHook 호출. CUAdapter를 새 hook position으로 전환. 재측정: `results/b36_overhead_revised.md` 참조.
+
+---
+
 ## 측정 환경 노트
 
 - **memoryallocator.go 변경**: 02:05 수정됨. S1 원본 실행(01:55)은 이전 바이너리 → 동일 바이너리로 S1 재실행(02:26~). 모든 최종 수치는 동일 02:17 빌드 기준.
