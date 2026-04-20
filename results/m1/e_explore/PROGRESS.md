@@ -1,19 +1,19 @@
 # Automation Progress
 
-Last updated: 2026-04-20 (T=~1h)
-Current phase: Tier A complete, starting Tier B
+Last updated: 2026-04-20 (T=~2h)
+Current phase: Tier B complete, starting Tier B+
 
 Completed:
   - [X] T=0 setup (branch m1-phase-e-exploration, dirs, Python env verified)
   - [X] T=0~1h Tier A: P1/P2/P3 raw failure analysis
-  - [ ] T=1~3h Tier B: 5 candidate metrics data
+  - [X] T=1~3h Tier B: 5 candidate metrics data
   - [ ] T=3~5h Tier B+: Prototype verification
   - [ ] T=5~6h Tier B++: Hybrid + correlation
   - [ ] T=6~7h Tier C: EXPLORATION_SUMMARY.md + final push
 
-Next action: Tier B — write candidate_metrics.py computing M1a~M5a;
-             generate candidate_metrics.csv + candidate_metrics_agg.csv;
-             write metric_exploration.md
+Next action: Tier B+ — write proto_option1.py through proto_option5.py;
+             each reformulates P1'/P2'/P3' for its option;
+             compile proto_verification.md and option_pros_cons.md
 
 Notes:
   - PR #9 (E.1) merged. Main pulled. Branch m1-phase-e-exploration created from main.
