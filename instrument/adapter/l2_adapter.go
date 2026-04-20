@@ -54,6 +54,13 @@ func (a *L2Adapter) registerRegionIfNew(addr uint64) {
 		return
 	}
 	a.currentPhaseRegions[tag] = true
+	// Another adapter (e.g., CUAdapter) may have auto-registered this region
+	// in the current phase. In that case the metrics already has the fetch
+	// record; re-calling AddRegionFetch would double-count bytes and reset
+	// the access bitmap, losing CU access bits. Skip.
+	if a.metrics.IsRegionFetched(tag) {
+		return
+	}
 	a.metrics.AddRegionFetch(tag, a.regionSize)
 }
 

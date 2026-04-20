@@ -172,6 +172,17 @@ func (m *PhaseMetrics) AddRegionFetch(regionTag uint64, regionSizeBytes uint64) 
 	m.regionAccessedBits[regionTag] = make(map[uint32]bool)
 }
 
+// IsRegionFetched reports whether regionTag has been registered (via
+// AddRegionFetch) in the current phase. Used by adapters to share dedup
+// state without coupling to each other: when the CU hook fires before the
+// L2 hook (real akita ordering), the CU adapter may auto-register a region;
+// the L2 adapter must then skip its own AddRegionFetch for that region to
+// avoid double-counting and bitmap reset.
+func (m *PhaseMetrics) IsRegionFetched(regionTag uint64) bool {
+	_, ok := m.regionFetched[regionTag]
+	return ok
+}
+
 // AddRegionAccess records access to the cacheline at cachelineOffset within regionTag.
 //
 // V12 structural defense (layer 1): returns a non-nil error if AddRegionFetch
