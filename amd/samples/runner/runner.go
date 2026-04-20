@@ -2,12 +2,14 @@
 package runner
 
 import (
+	"fmt"
 	"log"
 
 	// Enable profiling
 	_ "net/http/pprof"
 	"sync"
 
+	"github.com/sarchlab/akita/v4/mem/cache/optdirectory"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
@@ -37,6 +39,13 @@ type Runner struct {
 
 	GPUIDs     []int
 	benchmarks []benchmarks.Benchmark
+
+	log2PageSize          uint64
+	log2CacheBlockSize    uint64
+	log2CoherenceUnitSize uint64
+	pageMigrationPolicy   uint64
+	coherenceDirectory    uint64
+	idealDirectory        bool
 }
 
 // Init initializes the platform simulate
@@ -81,11 +90,19 @@ func (r *Runner) buildEmuPlatform() {
 }
 
 func (r *Runner) buildTimingPlatform() {
+	fmt.Printf("Build Timing Platform\n")
+
 	sampling.InitSampledEngine()
 
 	b := timingconfig.MakeBuilder().
 		WithSimulation(r.simulation).
-		WithNumGPUs(r.GPUIDs[len(r.GPUIDs)-1])
+		WithNumGPUs(r.GPUIDs[len(r.GPUIDs)-1]).
+		WithLog2CacheBlockSize(r.log2CacheBlockSize).
+		WithLog2PageSize(r.log2PageSize).
+		WithLog2CoherenceUnitSize(r.log2CoherenceUnitSize).
+		WithPageMigrationPolicy(r.pageMigrationPolicy).
+		WithCoherenceDirectory(r.coherenceDirectory).
+		WithIdealDirectory(r.idealDirectory)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()
@@ -162,10 +179,16 @@ func (r *Runner) Run() {
 	wg.Wait()
 
 	if r.reporter != nil {
+		r.reporter.log2BlockSize = r.log2CacheBlockSize + r.log2CoherenceUnitSize
 		r.reporter.report()
 	}
 
+	r.emitCoalescabilityReports()
+
 	r.Driver().Terminate()
+
+	fmt.Printf("Simulation Terminate\n")
+
 	r.simulation.Terminate()
 }
 
@@ -177,4 +200,25 @@ func (r *Runner) Driver() *driver.Driver {
 // Engine returns the event-driven simulation engine used by the current runner.
 func (r *Runner) Engine() sim.Engine {
 	return r.simulation.GetEngine()
+}
+
+// Simulation returns the simulation object, allowing callers to iterate
+// components and register hooks after Init() but before Run().
+func (r *Runner) Simulation() *simulation.Simulation {
+	return r.simulation
+}
+
+// emitCoalescabilityReports calls EmitCumulativeReport on every
+// optdirectory.Comp registered in the simulation. This is the end-of-sim
+// hook that writes motivation_cumulative_GPU{N}.csv and prints the PHASE 0 /
+// R6 exit-criterion verdict to stdout.
+func (r *Runner) emitCoalescabilityReports() {
+	if r.simulation == nil {
+		return
+	}
+	for _, comp := range r.simulation.Components() {
+		if cd, ok := comp.(*optdirectory.Comp); ok {
+			cd.EmitCumulativeReport()
+		}
+	}
 }
