@@ -10,7 +10,7 @@ Operator: Claude Sonnet 4.6 (automated, user sleeping)
 | Task | Status | Commit | Timestamp |
 |------|--------|--------|-----------|
 | B: pre-existing evidence | ✅ DONE | (see below) | 2026-04-20 |
-| C: L2 fixation docs | ⏳ PENDING | - | - |
+| C: L2 fixation docs | ✅ DONE | (see below) | 2026-04-20 |
 | A1: adapter β design | ⏳ PENDING | - | - |
 | A2: test updates | ⏳ PENDING | - | - |
 | A3: grep + final | ⏳ PENDING | - | - |
