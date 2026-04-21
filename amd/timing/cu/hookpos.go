@@ -19,3 +19,12 @@ type CUVectorMemAccessDetail struct {
 //
 // ctx.Domain is *ComputeUnit. ctx.Item is the retiring *wavefront.Wavefront.
 var HookPosWfRetired = &sim.HookPos{Name: "WfRetired"}
+
+// HookPosInstructionRetired fires when a single instruction completes execution
+// in the ComputeUnit. Triggered from ComputeUnit.logInstTask() when
+// completed=true (i.e., when tracing.EndTask is called for an instruction).
+//
+// Fires for every instruction type: VALU, VMem, Scalar, Branch, LDS, Special.
+// ctx.Domain is *ComputeUnit. ctx.Item is the completing *wavefront.Inst.
+// Use this hook to compute IPC: RetiredInstructions / (EndCycle - StartCycle).
+var HookPosInstructionRetired = &sim.HookPos{Name: "InstructionRetired"}

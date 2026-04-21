@@ -695,6 +695,7 @@ func (cu *ComputeUnit) logInstTask(
 ) {
 	if completed {
 		tracing.EndTask(inst.ID, cu)
+		cu.invokeInstructionRetiredHook(wf, inst)
 		return
 	}
 
@@ -852,6 +853,20 @@ func (cu *ComputeUnit) populateShadowBuffers() {
 	cu.InFlightScalarMemAccess = nil
 	cu.InFlightInstFetch = nil
 	cu.InFlightVectorMemAccess = nil
+}
+
+func (cu *ComputeUnit) invokeInstructionRetiredHook(
+	_ *wavefront.Wavefront,
+	inst *wavefront.Inst,
+) {
+	if cu.NumHooks() == 0 {
+		return
+	}
+	cu.InvokeHook(sim.HookCtx{
+		Domain: cu,
+		Pos:    HookPosInstructionRetired,
+		Item:   inst,
+	})
 }
 
 func (cu *ComputeUnit) setWavesToReady() {

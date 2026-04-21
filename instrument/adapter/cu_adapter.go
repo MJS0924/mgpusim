@@ -56,6 +56,11 @@ func (a *CUAdapter) OnWavefrontRetired(n uint64) {
 	a.metrics.AddRetiredWavefronts(n)
 }
 
+// OnInstructionRetired increments the retired-instruction counter by n.
+func (a *CUAdapter) OnInstructionRetired(n uint64) {
+	a.metrics.AddRetiredInstructions(n)
+}
+
 // WarningCount returns the number of unrecoverable access failures (post
 // auto-register retry). Under β extended semantics this should be 0 in a
 // well-formed run; non-zero indicates a genuine bug, not CU/L2 ordering.
@@ -66,6 +71,7 @@ func (a *CUAdapter) WarningCount() uint64 {
 // Func implements sim.Hook. It dispatches:
 //   - HookPosCUVectorMemAccess → OnRegionAccess
 //   - HookPosWfRetired → OnWavefrontRetired(1)
+//   - HookPosInstructionRetired → OnInstructionRetired(1)
 func (a *CUAdapter) Func(ctx sim.HookCtx) {
 	switch ctx.Pos {
 	case cu.HookPosCUVectorMemAccess:
@@ -73,5 +79,7 @@ func (a *CUAdapter) Func(ctx sim.HookCtx) {
 		a.OnRegionAccess(d.Addr)
 	case cu.HookPosWfRetired:
 		a.OnWavefrontRetired(1)
+	case cu.HookPosInstructionRetired:
+		a.OnInstructionRetired(1)
 	}
 }

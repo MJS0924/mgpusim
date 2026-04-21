@@ -28,7 +28,9 @@ type ParquetSnapshot struct {
 	WriteInitInvalidations  uint64 `parquet:"write_init_invalidations"`
 	EvictInitInvalidations  uint64 `parquet:"evict_init_invalidations"`
 	DirectoryEvictions      uint64 `parquet:"directory_evictions"`
+	EvictionInvalidations   uint64 `parquet:"eviction_invalidations"`
 	RetiredWavefronts       uint64 `parquet:"retired_wavefronts"`
+	RetiredInstructions     uint64 `parquet:"retired_instructions"`
 }
 
 // ParquetSnapshotSink writes phase snapshots to a parquet file.
@@ -39,16 +41,17 @@ type ParquetSnapshotSink struct {
 	workloadID     uint16
 	autoFlushEvery int
 
-	mu                   sync.Mutex
-	buf                  []ParquetSnapshot
-	writer               *parquet.GenericWriter[ParquetSnapshot]
-	file                 *os.File
-	phaseN               uint64
-	totalRetiredWf       uint64
-	totalL2Hits          uint64
-	totalL2Misses        uint64
-	totalRegionFetched   uint64
-	totalRegionAccessed  uint64
+	mu                    sync.Mutex
+	buf                   []ParquetSnapshot
+	writer                *parquet.GenericWriter[ParquetSnapshot]
+	file                  *os.File
+	phaseN                uint64
+	totalRetiredWf        uint64
+	totalRetiredInst      uint64
+	totalL2Hits           uint64
+	totalL2Misses         uint64
+	totalRegionFetched    uint64
+	totalRegionAccessed   uint64
 }
 
 // NewParquetSnapshotSink creates a ParquetSnapshotSink writing to path.
@@ -98,11 +101,14 @@ func (s *ParquetSnapshotSink) PushSnapshot(snap instrument.PhaseMetrics) error {
 		WriteInitInvalidations:  snap.WriteInitInvalidations,
 		EvictInitInvalidations:  snap.EvictInitInvalidations,
 		DirectoryEvictions:      snap.DirectoryEvictions,
+		EvictionInvalidations:   snap.EvictionInvalidations,
 		RetiredWavefronts:       snap.RetiredWavefronts,
+		RetiredInstructions:     snap.RetiredInstructions,
 	}
 	s.buf = append(s.buf, row)
 	s.phaseN++
 	s.totalRetiredWf += snap.RetiredWavefronts
+	s.totalRetiredInst += snap.RetiredInstructions
 	s.totalL2Hits += snap.L2Hits
 	s.totalL2Misses += snap.L2Misses
 	s.totalRegionFetched += snap.RegionFetchedBytes
@@ -140,6 +146,13 @@ func (s *ParquetSnapshotSink) TotalRetiredWavefronts() uint64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.totalRetiredWf
+}
+
+// TotalRetiredInstructions returns the sum of RetiredInstructions across all phases.
+func (s *ParquetSnapshotSink) TotalRetiredInstructions() uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.totalRetiredInst
 }
 
 // Totals returns (L2Hits, L2Misses, RegionFetchedBytes, RegionAccessedBytes)

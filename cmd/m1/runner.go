@@ -121,8 +121,8 @@ func runM1(cfg *m1Config) error {
 		}
 	}
 
-	log.Printf("[m1] R=%d: L2Adapter×%d CUAdapter×%d windowCycles=%d",
-		cfg.regionSize, l2Count, cuCount, cfg.windowCycles)
+	log.Printf("[m1] R=%d cap=%d: L2Adapter×%d CUAdapter×%d windowCycles=%d",
+		cfg.regionSize, cfg.maxEntries, l2Count, cuCount, cfg.windowCycles)
 
 	// Build resetable list: L2Adapters implement PhaseResetable.
 	resetables := make([]adapter.PhaseResetable, len(l2Adapters))
@@ -165,10 +165,12 @@ func runM1(cfg *m1Config) error {
 	// DirectoryEvictions is tracked per-phase in metrics; we check if any
 	// snapshot had evictions (tracked in parquet rows, verified in sanity.md).
 
-	fmt.Printf("M1_SUMMARY workload=%s R=%d phases=%d RetiredWf=%d L2H=%d L2M=%d fetched=%d accessed=%d V11=%s V12=%s output=%s\n",
-		cfg.workload, cfg.regionSize,
+	totalInst := sink.TotalRetiredInstructions()
+	totalWf := sink.TotalRetiredWavefronts()
+	fmt.Printf("M1_SUMMARY workload=%s R=%d cap=%d phases=%d RetiredWf=%d RetiredInst=%d L2H=%d L2M=%d fetched=%d accessed=%d V11=%s V12=%s output=%s\n",
+		cfg.workload, cfg.regionSize, cfg.maxEntries,
 		sink.PhaseCount(),
-		sink.TotalRetiredWavefronts(),
+		totalWf, totalInst,
 		l2h, l2m, fetched, accessed,
 		v11, v12,
 		sink.Filepath(),

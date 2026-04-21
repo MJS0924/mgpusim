@@ -60,10 +60,21 @@ type PhaseMetrics struct {
 	// DirectoryEvictions must be 0 for InfiniteCapacity runs (Invariant V11).
 	// This field is informational; V11 enforcement is via
 	// coherence.DirectoryConfig.AssertNoEviction().
-	DirectoryEvictions  uint64
+	DirectoryEvictions uint64
+
+	// EvictionInvalidations counts invalidation messages triggered by LRU
+	// capacity evictions (finite-capacity mode only). Each evicted region
+	// contributes Sharers.Len() messages. Zero in M1 baseline (infinite mode).
+	EvictionInvalidations uint64
+
 	// RetiredWavefronts counts wavefronts that reached WfCompleted state this phase.
 	// Unit: wavefronts (not individual instructions). Each wavefront is 64 threads.
 	RetiredWavefronts uint64
+
+	// RetiredInstructions counts individual instructions retired this phase.
+	// Populated via HookPosInstructionRetired (B-7.0 IPC measurement).
+	// IPC = RetiredInstructions / (EndCycle - StartCycle).
+	RetiredInstructions uint64
 
 	// ── Intrinsic region-utilization metrics ─────────────────────────────
 	RegionFetchedBytes  uint64 // cumulative bytes fetched this phase
@@ -128,6 +139,18 @@ func (m *PhaseMetrics) AddL2Access(hit bool) {
 // AddRetiredWavefronts increments the retired-wavefront counter by n.
 func (m *PhaseMetrics) AddRetiredWavefronts(n uint64) {
 	m.RetiredWavefronts += n
+}
+
+// AddRetiredInstructions increments the retired-instruction counter by n.
+// Called from HookPosInstructionRetired via CUAdapter (B-7.0 IPC measurement).
+func (m *PhaseMetrics) AddRetiredInstructions(n uint64) {
+	m.RetiredInstructions += n
+}
+
+// AddEvictionInvalidations records n invalidation messages triggered by one
+// LRU capacity eviction. n is typically Sharers.Len() for the evicted entry.
+func (m *PhaseMetrics) AddEvictionInvalidations(n uint64) {
+	m.EvictionInvalidations += n
 }
 
 // AddInvalidation records one invalidation event by source.
