@@ -7,9 +7,11 @@ import (
 
 	// Enable profiling
 	_ "net/http/pprof"
+	"os"
 	"sync"
 
 	"github.com/sarchlab/akita/v4/mem/cache/optdirectory"
+	"github.com/sarchlab/akita/v4/mem/cache/superdirectory"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
@@ -18,6 +20,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner/emusystem"
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner/timingconfig"
 	"github.com/sarchlab/mgpusim/v4/amd/sampling"
+	"github.com/sarchlab/mgpusim/v4/instrument/adapter"
 )
 
 type verificationPreEnablingBenchmark interface {
@@ -190,6 +193,48 @@ func (r *Runner) Run() {
 	fmt.Printf("Simulation Terminate\n")
 
 	r.simulation.Terminate()
+
+	r.flushSuperdirectoryEventLog()
+}
+
+// flushSuperdirectoryEventLog collects all superdirectory EventLoggers and
+// writes their buffered events to a parquet file.
+// Output path: $EVENT_LOG_PATH if set, otherwise /tmp/superdirectory_events.parquet.
+// No-ops silently if no superdirectory components are found.
+func (r *Runner) flushSuperdirectoryEventLog() {
+	path, set := os.LookupEnv("EVENT_LOG_PATH")
+	if set && path == "" {
+		// Caller explicitly disabled event logging (e.g. cmd/m1 without -enable-event-log).
+		return
+	}
+	if path == "" {
+		path = "/tmp/superdirectory_events.parquet"
+	}
+
+	var loggers []*superdirectory.EventLogger
+	for _, comp := range r.simulation.Components() {
+		if sd, ok := comp.(*superdirectory.Comp); ok {
+			loggers = append(loggers, sd.EventLogger())
+		}
+	}
+	if len(loggers) == 0 {
+		return
+	}
+
+	sink, err := adapter.NewMotionEventSink(path)
+	if err != nil {
+		log.Printf("[runner] event-log: failed to create sink: %v", err)
+		return
+	}
+	if err := sink.FlushLoggers(loggers); err != nil {
+		log.Printf("[runner] event-log: flush error: %v", err)
+	}
+	if err := sink.Close(); err != nil {
+		log.Printf("[runner] event-log: close error: %v", err)
+	}
+	promos, demotos := sink.Counts()
+	log.Printf("[runner] event-log written: promotions=%d demotions=%d path=%s",
+		promos, demotos, path)
 }
 
 // Driver returns the GPU driver used by the current runner.

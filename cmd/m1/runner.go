@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sarchlab/akita/v4/mem/cache/superdirectory"
 	"github.com/sarchlab/akita/v4/mem/cache/writebackcoh"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/mgpusim/v4/amd/benchmarks/amdappsdk/bitonicsort"
@@ -122,18 +121,14 @@ func runM1(cfg *m1Config) error {
 		}
 	}
 
-	// Collect superdirectory EventLoggers and enable them when requested.
-	var sdLoggers []*superdirectory.EventLogger
+	// Route superdirectory event log through runner's auto-flush (EVENT_LOG_PATH).
+	// Logger is enabled by default in the superdirectory builder; we only need to
+	// set the path. Setting "" explicitly disables the runner flush.
 	if cfg.enableEventLog {
-		for _, comp := range simObj.Components() {
-			if sd, ok := comp.(*superdirectory.Comp); ok {
-				l := sd.EventLogger()
-				l.Enable()
-				sdLoggers = append(sdLoggers, l)
-			}
-		}
-		log.Printf("[m1] event-log enabled: %d superdirectory components, output=%s",
-			len(sdLoggers), cfg.eventLogPath)
+		os.Setenv("EVENT_LOG_PATH", cfg.eventLogPath)
+		log.Printf("[m1] event-log enabled: output=%s", cfg.eventLogPath)
+	} else {
+		os.Setenv("EVENT_LOG_PATH", "")
 	}
 
 	log.Printf("[m1] R=%d: L2Adapter×%d CUAdapter×%d windowCycles=%d",
@@ -161,23 +156,6 @@ func runM1(cfg *m1Config) error {
 
 	if err := sink.Close(); err != nil {
 		return fmt.Errorf("close sink: %w", err)
-	}
-
-	// Flush event log if enabled.
-	if cfg.enableEventLog && len(sdLoggers) > 0 {
-		evSink, err := adapter.NewMotionEventSink(cfg.eventLogPath)
-		if err != nil {
-			return fmt.Errorf("create event sink: %w", err)
-		}
-		if err := evSink.FlushLoggers(sdLoggers); err != nil {
-			return fmt.Errorf("flush event loggers: %w", err)
-		}
-		if err := evSink.Close(); err != nil {
-			return fmt.Errorf("close event sink: %w", err)
-		}
-		promos, demotos := evSink.Counts()
-		log.Printf("[m1] event-log written: promotions=%d demotions=%d path=%s",
-			promos, demotos, cfg.eventLogPath)
 	}
 
 	// V12 warning count (sum across all CU adapters).
@@ -239,6 +217,15 @@ func setupWorkload(cfg *m1Config, r *runner.Runner) error {
 		bm.X = 256
 		bm.Y = 256
 		bm.Z = 256
+		if cfg.matmulX > 0 {
+			bm.X = uint32(cfg.matmulX)
+		}
+		if cfg.matmulY > 0 {
+			bm.Y = uint32(cfg.matmulY)
+		}
+		if cfg.matmulZ > 0 {
+			bm.Z = uint32(cfg.matmulZ)
+		}
 		r.AddBenchmark(bm)
 
 	case "nbody":
