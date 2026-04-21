@@ -1,6 +1,9 @@
 package coherence
 
-import "fmt"
+import (
+	"container/list"
+	"fmt"
+)
 
 // PlainVIDirectory implements the Directory interface with:
 //   - Infinite capacity (hash-map entry store, no evictions).
@@ -32,6 +35,12 @@ const (
 	// SharerEventKindEvictInvalidate fires on eviction-init invalidation (Invalidate call).
 	// Under InfiniteCapacity (V11) this must never fire in practice.
 	SharerEventKindEvictInvalidate
+	// SharerEventKindCapacityEvict fires when an entry is displaced by the LRU
+	// policy in finite-capacity mode. Unlike SharerEventKindEvictInvalidate
+	// (which fires on explicit Invalidate calls), this kind fires only on
+	// capacity-triggered evictions. Sharers field carries the pre-eviction
+	// sharer set so listeners can count invalidation messages per eviction.
+	SharerEventKindCapacityEvict
 )
 
 // SharerEvent is emitted by PlainVIDirectory on every sharer-set mutation.
@@ -49,6 +58,9 @@ type PlainVIDirectory struct {
 	entries   map[uint64]*Entry // key: AddressMapper.EntryTag(addr)
 	stats     DirectoryStats
 	callbacks []func(SharerEvent)
+	// LRU fields (finite-capacity mode only; nil when InfiniteCapacity=true).
+	lruList  *list.List               // front = most-recently-used; back = eviction candidate
+	lruIndex map[uint64]*list.Element // regionTag → list element for O(1) access
 }
 
 // AddCallback registers cb to be called on every SharerEvent fired by this
@@ -66,20 +78,16 @@ func (d *PlainVIDirectory) fireCallbacks(e SharerEvent) {
 
 // NewPlainVIDirectory creates a PlainVIDirectory from cfg.
 //
-// R_A1 defense: returns an error (not panic) if the config does not satisfy
-// the M1 v1.2 baseline contract (InfiniteCapacity=true, CoalescingEnabled=false).
-// Error over panic makes this testable (Scenario 6 in B-0.4).
+// Supported modes:
+//   - Infinite capacity (M1 baseline): InfiniteCapacity=true, MaxEntries=0.
+//     V11 invariant: DirectoryEvictions must stay 0. Panics if violated.
+//   - Finite capacity (B-7.0+ capacity test): InfiniteCapacity=false, MaxEntries>0.
+//     LRU eviction fires SharerEventKindCapacityEvict when capacity is reached.
+//     DirectoryEvictions > 0 is expected and valid in this mode.
 //
-// No capacity pre-allocation: the hash map grows on demand. Peak memory is
-// measured in the PHASE C pilot (Appendix B #13, R_A2).
+// R_A1 defense: returns an error (not panic) on config violations.
+// Error over panic makes this testable (Scenario 6 in B-0.4).
 func NewPlainVIDirectory(cfg DirectoryConfig) (*PlainVIDirectory, error) {
-	if !cfg.InfiniteCapacity {
-		return nil, fmt.Errorf(
-			"PlainVIDirectory requires InfiniteCapacity=true (Invariant V11); "+
-				"got InfiniteCapacity=false — use a finite-capacity directory "+
-				"for PHASE 2 P1 comparisons, not for M1",
-		)
-	}
 	if cfg.CoalescingEnabled {
 		return nil, fmt.Errorf(
 			"PlainVIDirectory requires CoalescingEnabled=false (§6 REC-exclusion); "+
@@ -89,11 +97,66 @@ func NewPlainVIDirectory(cfg DirectoryConfig) (*PlainVIDirectory, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("PlainVIDirectory: invalid config: %w", err)
 	}
-	return &PlainVIDirectory{
+	d := &PlainVIDirectory{
 		cfg:     cfg,
 		mapper:  NewAddressMapper(cfg),
 		entries: make(map[uint64]*Entry),
-	}, nil
+	}
+	if cfg.IsForFiniteMode() {
+		d.lruList = list.New()
+		d.lruIndex = make(map[uint64]*list.Element)
+	}
+	return d, nil
+}
+
+// ─── LRU helpers (finite-capacity mode only) ─────────────────────────────────
+
+// lruTouch moves tag to the front of the LRU list (mark as most recently used).
+// No-op in infinite-capacity mode.
+func (d *PlainVIDirectory) lruTouch(tag uint64) {
+	if d.lruList == nil {
+		return
+	}
+	if elem, ok := d.lruIndex[tag]; ok {
+		d.lruList.MoveToFront(elem)
+	} else {
+		elem = d.lruList.PushFront(tag)
+		d.lruIndex[tag] = elem
+	}
+}
+
+// lruEvictIfFull evicts the least-recently-used entry when MaxEntries is
+// reached, firing SharerEventKindCapacityEvict to notify listeners.
+// No-op in infinite-capacity mode.
+func (d *PlainVIDirectory) lruEvictIfFull() {
+	if d.lruList == nil {
+		return
+	}
+	for d.lruList.Len() > d.cfg.MaxEntries {
+		back := d.lruList.Back()
+		if back == nil {
+			break
+		}
+		tag := back.Value.(uint64)
+		d.lruList.Remove(back)
+		delete(d.lruIndex, tag)
+
+		e, ok := d.entries[tag]
+		if !ok {
+			continue
+		}
+		// Capture sharer set before invalidation so listeners can count messages.
+		sharers := e.Sharers
+		e.IsValid = false
+		e.IsDirty = false
+		e.Sharers = 0
+		d.stats.Evictions++
+		d.fireCallbacks(SharerEvent{
+			Kind:      SharerEventKindCapacityEvict,
+			RegionTag: tag,
+			Sharers:   sharers, // pre-eviction sharer set
+		})
+	}
 }
 
 // ─── Directory interface ─────────────────────────────────────────────────────
@@ -107,6 +170,8 @@ func (d *PlainVIDirectory) Lookup(addr uint64) (*Entry, bool) {
 	if !ok || !e.IsValid {
 		return nil, false
 	}
+	// Touch LRU so a looked-up entry is not evicted before it is used.
+	d.lruTouch(tag)
 	return e, true
 }
 
@@ -115,9 +180,11 @@ func (d *PlainVIDirectory) Lookup(addr uint64) (*Entry, bool) {
 // region already has a valid entry (caller must Lookup first to avoid
 // double-insert, which would silently discard sharer state).
 //
-// V11 contract: Insert never evicts. Under infinite capacity, the map just
-// grows. If we somehow reach this path when it should evict, we panic with
-// "V11 violation" — that would be a programmer error in this codebase.
+// Infinite-capacity mode: the map grows unbounded; Insert never evicts.
+// If an eviction is somehow recorded, panic with "V11 violation".
+//
+// Finite-capacity mode: Insert may trigger LRU eviction via lruEvictIfFull
+// before adding the new entry. Evictions are expected and valid.
 func (d *PlainVIDirectory) Insert(addr uint64, initialSharers SharerSet) error {
 	tag := d.mapper.EntryTag(addr)
 	if e, ok := d.entries[tag]; ok && e.IsValid {
@@ -127,6 +194,11 @@ func (d *PlainVIDirectory) Insert(addr uint64, initialSharers SharerSet) error {
 			tag, addr,
 		)
 	}
+
+	// In finite-capacity mode, evict LRU entry before inserting new one.
+	// Touch first so the new entry is front-of-list after eviction.
+	d.lruTouch(tag)
+	d.lruEvictIfFull()
 
 	n := d.cfg.CachelinesPerRegion()
 	e := &Entry{
@@ -139,10 +211,8 @@ func (d *PlainVIDirectory) Insert(addr uint64, initialSharers SharerSet) error {
 	d.entries[tag] = e
 	d.stats.Inserts++
 
-	// Explicit V11 guard: an infinite directory must never evict.
-	// If this insert somehow causes a displacement (it cannot in a plain map,
-	// but guard against future refactors that add capacity logic):
-	if d.stats.Evictions != 0 {
+	// V11 guard: infinite-capacity directories must never evict.
+	if d.cfg.InfiniteCapacity && d.stats.Evictions != 0 {
 		panic("V11 violation: PlainVIDirectory recorded an eviction — " +
 			"infinite capacity invariant broken")
 	}
@@ -162,6 +232,9 @@ func (d *PlainVIDirectory) UpdateSharers(addr uint64, gpu GPUID, op Op) error {
 
 	if !ok || !e.IsValid {
 		// Auto-insert on miss (both reads and writes create a new entry).
+		// In finite-capacity mode, touch first then evict-if-full.
+		d.lruTouch(tag)
+		d.lruEvictIfFull()
 		n := d.cfg.CachelinesPerRegion()
 		e = &Entry{
 			Tag:          tag,
@@ -170,6 +243,9 @@ func (d *PlainVIDirectory) UpdateSharers(addr uint64, gpu GPUID, op Op) error {
 		}
 		d.entries[tag] = e
 		d.stats.Inserts++
+	} else {
+		// Hit: mark as most-recently-used.
+		d.lruTouch(tag)
 	}
 
 	// V12: mark the specific sub-offset accessed.

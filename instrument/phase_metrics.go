@@ -310,7 +310,9 @@ func (m *PhaseMetrics) Flush() (PhaseMetrics, error) {
 		WriteInitInvalidations:  m.WriteInitInvalidations,
 		EvictInitInvalidations:  m.EvictInitInvalidations,
 		DirectoryEvictions:      m.DirectoryEvictions,
-		RetiredWavefronts:     m.RetiredWavefronts,
+		EvictionInvalidations:   m.EvictionInvalidations,
+		RetiredWavefronts:       m.RetiredWavefronts,
+		RetiredInstructions:     m.RetiredInstructions,
 		RegionFetchedBytes:      m.RegionFetchedBytes,
 		RegionAccessedBytes:     m.RegionAccessedBytes,
 		ActiveRegions:           m.ActiveRegions,
@@ -344,7 +346,9 @@ func (m *PhaseMetrics) resetInternal() {
 	m.WriteInitInvalidations = 0
 	m.EvictInitInvalidations = 0
 	m.DirectoryEvictions = 0
+	m.EvictionInvalidations = 0
 	m.RetiredWavefronts = 0
+	m.RetiredInstructions = 0
 	m.RegionFetchedBytes = 0
 	m.RegionAccessedBytes = 0
 	m.ActiveRegions = 0

@@ -41,10 +41,12 @@ var ValidRegionSizes = []uint64{64, 256, 1024, 4096, 16384}
 // DirectoryConfig holds the static parameters for one region-size
 // configuration in the M1 v1.2 sweep.
 //
-// All three flags are user-facing and must be set explicitly by the caller:
-//   - RegionSizeBytes:    coherence granularity in bytes (must be power of 2)
-//   - InfiniteCapacity:   true for M1 (Invariant V11); false for PHASE 2 P1
-//   - CoalescingEnabled:  false for M1 (baseline); true only for REC in PHASE 2
+// Capacity modes (mutually exclusive):
+//   - InfiniteCapacity=true, MaxEntries=0: M1 baseline (Invariant V11).
+//     Hash-map entry store; no evictions; DirectoryEvictions must stay 0.
+//   - InfiniteCapacity=false, MaxEntries>0: finite-capacity mode (B-7.0+).
+//     LRU eviction kicks in when entry count reaches MaxEntries.
+//     DirectoryEvictions > 0 is expected and valid in this mode.
 //
 // Reviewer attack: "Three booleans invite misconfiguration."
 // Defense: Validate() rejects every combination that violates M1 requirements
@@ -61,9 +63,14 @@ type DirectoryConfig struct {
 	// never evict entries (Invariant V11). Runtime DirectoryEvictions must
 	// remain 0 for the entire simulation. M1 v1.2 requires this.
 	//
-	// Implementation contract: entries are stored in a hash map keyed by
-	// (PID, tag); no set-associative eviction logic is invoked.
+	// Set false together with MaxEntries > 0 to enable finite-capacity LRU
+	// mode (B-7.0 capacity-effect small test and PHASE 2 comparisons).
 	InfiniteCapacity bool
+
+	// MaxEntries is the maximum number of directory entries in finite-capacity
+	// mode. Zero means unlimited (must be combined with InfiniteCapacity=true).
+	// When InfiniteCapacity=false, MaxEntries must be > 0.
+	MaxEntries int
 
 	// CoalescingEnabled, when false (default), disables REC-style entry
 	// coalescing so that per-region sharer sets and per-region access bitmaps
@@ -79,12 +86,13 @@ func (c DirectoryConfig) blockSize() uint64 {
 	return c.BlockSizeBytes
 }
 
-// Validate returns a non-nil error if the config is invalid for M1 v1.2.
-// Three classes of rejection:
+// Validate returns a non-nil error if the config is invalid.
+// Four classes of rejection:
 //  1. RegionSizeBytes structurally invalid (zero, non-power-of-2, < block size).
-//  2. RegionSizeBytes not a member of ValidRegionSizes (prevents silent drift
-//     of the sweep set).
+//  2. RegionSizeBytes not a member of ValidRegionSizes.
 //  3. Semantically invalid combinations (e.g., coalescing without infinite).
+//  4. Capacity mode contradiction (infinite=true with MaxEntries>0, or
+//     infinite=false with MaxEntries==0).
 func (c DirectoryConfig) Validate() error {
 	bs := c.blockSize()
 	r := c.RegionSizeBytes
@@ -117,7 +125,27 @@ func (c DirectoryConfig) Validate() error {
 			r, ValidRegionSizes)
 	}
 
+	// Capacity mode consistency check.
+	if c.InfiniteCapacity && c.MaxEntries > 0 {
+		return fmt.Errorf(
+			"contradictory capacity config: InfiniteCapacity=true with MaxEntries=%d; "+
+				"set MaxEntries=0 for infinite mode",
+			c.MaxEntries)
+	}
+	if !c.InfiniteCapacity && c.MaxEntries <= 0 {
+		return fmt.Errorf(
+			"finite-capacity mode requires MaxEntries > 0; got MaxEntries=%d "+
+				"with InfiniteCapacity=false",
+			c.MaxEntries)
+	}
+
 	return nil
+}
+
+// IsForFiniteMode reports whether the config uses finite LRU capacity
+// (InfiniteCapacity=false, MaxEntries>0). Used in B-7.0+ capacity tests.
+func (c DirectoryConfig) IsForFiniteMode() bool {
+	return !c.InfiniteCapacity && c.MaxEntries > 0
 }
 
 // IsForM1 reports whether the config matches the M1 v1.2 baseline contract:

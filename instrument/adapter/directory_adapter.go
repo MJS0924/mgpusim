@@ -32,6 +32,15 @@ func (a *DirectoryAdapter) OnInvalidation(source instrument.InvSource) {
 	a.metrics.AddInvalidation(source)
 }
 
+// OnCapacityEvict records an LRU capacity eviction.
+// n is the number of sharers invalidated (Sharers.Len() from the eviction event).
+func (a *DirectoryAdapter) OnCapacityEvict(sharers coherence.SharerSet) {
+	a.metrics.AddDirectoryEviction()
+	if n := uint64(sharers.Len()); n > 0 {
+		a.metrics.AddEvictionInvalidations(n)
+	}
+}
+
 // SharerEventCallback returns a func(coherence.SharerEvent) suitable for
 // PlainVIDirectory.AddCallback. The callback dispatches each event kind
 // to the corresponding On* method.
@@ -44,6 +53,8 @@ func (a *DirectoryAdapter) SharerEventCallback() func(coherence.SharerEvent) {
 			a.OnInvalidation(instrument.InvSourceWriteInit)
 		case coherence.SharerEventKindEvictInvalidate:
 			a.OnInvalidation(instrument.InvSourceEvictInit)
+		case coherence.SharerEventKindCapacityEvict:
+			a.OnCapacityEvict(e.Sharers)
 		}
 	}
 }
