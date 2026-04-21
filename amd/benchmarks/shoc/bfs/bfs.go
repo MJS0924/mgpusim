@@ -168,12 +168,14 @@ func (b *Benchmark) exec() {
 			[3]uint16{localSize, 1, 1},
 			&args)
 
+		fmt.Printf("[%s]\tComplete Kernel depth %d, Send MemCopyD2H req\n", b.kernel.Symbol.Name, i)
 		b.driver.MemCopyD2H(b.context, &flag, b.dFlag)
 		if flag == 0 {
 			break
 		}
 	}
 
+	fmt.Printf("[%s]\tComplete Kernel depth, Send MemCopyD2H req\n", b.kernel.Symbol.Name)
 	b.driver.MemCopyD2H(b.context, b.hCost, b.dFrontier)
 }
 

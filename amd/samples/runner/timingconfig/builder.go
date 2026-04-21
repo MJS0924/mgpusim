@@ -18,17 +18,22 @@ import (
 type Builder struct {
 	simulation *simulation.Simulation
 
-	numGPUs            int
-	numCUPerSA         int
-	numSAPerGPU        int
-	cpuMemSize         uint64
-	gpuMemSize         uint64
-	log2PageSize       uint64
-	useMagicMemoryCopy bool
+	numGPUs               int
+	numCUPerSA            int
+	numSAPerGPU           int
+	cpuMemSize            uint64
+	gpuMemSize            uint64
+	log2PageSize          uint64
+	log2CacheBlockSize    uint64
+	log2CoherenceUnitSize uint64
+	useMagicMemoryCopy    bool
+	pageMigrationPolicy   uint64
+	coherenceDirectory    uint64
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
 	rdmaAddressMapper *mem.BankedAddressPortMapper
+	idealDirectory    bool
 }
 
 // MakeBuilder creates a new Builder with default parameters.
@@ -62,6 +67,36 @@ func (b Builder) WithMagicMemoryCopy() Builder {
 	return b
 }
 
+func (b Builder) WithLog2PageSize(size uint64) Builder {
+	b.log2PageSize = size
+	return b
+}
+
+func (b Builder) WithLog2CacheBlockSize(size uint64) Builder {
+	b.log2CacheBlockSize = size
+	return b
+}
+
+func (b Builder) WithLog2CoherenceUnitSize(size uint64) Builder {
+	b.log2CoherenceUnitSize = size
+	return b
+}
+
+func (b Builder) WithPageMigrationPolicy(policy uint64) Builder {
+	b.pageMigrationPolicy = policy
+	return b
+}
+
+func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
+	b.coherenceDirectory = dir
+	return b
+}
+
+func (b Builder) WithIdealDirectory(bo bool) Builder {
+	b.idealDirectory = bo
+	return b
+}
+
 // Build builds the hardware platform.
 func (b Builder) Build() *sim.Domain {
 	b.cpuGPUMemSizeMustEqual()
@@ -69,7 +104,7 @@ func (b Builder) Build() *sim.Domain {
 	b.platform = &sim.Domain{}
 
 	b.globalStorage = mem.NewStorage(
-		uint64(b.numGPUs)*b.gpuMemSize + b.cpuMemSize)
+		uint64(b.numGPUs+1)*b.gpuMemSize + b.cpuMemSize)
 
 	mmuComp, pageTable := b.createMMU()
 	gpuDriver := b.buildGPUDriver(pageTable)
@@ -99,14 +134,15 @@ func (b *Builder) cpuGPUMemSizeMustEqual() {
 	}
 }
 
-func (b *Builder) createMMU() (*mmu.Comp, vm.PageTable) {
-	pageTable := vm.NewPageTable(b.log2PageSize)
+func (b *Builder) createMMU() (*mmu.Comp, vm.LevelPageTable) {
+	pageTable := vm.NewLevelPageTable(b.log2PageSize, 6, "MMU.PT")
 	mmuBuilder := mmu.MakeBuilder().
 		WithEngine(b.simulation.GetEngine()).
 		WithFreq(1 * sim.GHz).
 		WithPageWalkingLatency(100).
 		WithLog2PageSize(b.log2PageSize).
-		WithPageTable(pageTable)
+		WithPageTable(pageTable).
+		WithPageMigrationPolicy(b.pageMigrationPolicy)
 
 	mmuComponent := mmuBuilder.Build("MMU")
 
@@ -116,7 +152,7 @@ func (b *Builder) createMMU() (*mmu.Comp, vm.PageTable) {
 }
 
 func (b *Builder) buildGPUDriver(
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 ) *driver.Driver {
 	gpuDriverBuilder := driver.MakeBuilder()
 
@@ -128,9 +164,12 @@ func (b *Builder) buildGPUDriver(
 		WithEngine(b.simulation.GetEngine()).
 		WithPageTable(pageTable).
 		WithLog2PageSize(b.log2PageSize).
+		WithLog2CacheLineSize(b.log2CacheBlockSize).
 		WithGlobalStorage(b.globalStorage).
 		WithD2HCycles(8500).
 		WithH2DCycles(14500).
+		WithVisTracer(b.simulation.GetVisTracer()).
+		WithPageMigrationPolicy(b.pageMigrationPolicy).
 		Build("Driver")
 
 	b.simulation.RegisterComponent(gpuDriver)
@@ -149,9 +188,18 @@ func (b *Builder) createGPUBuilder(
 		WithNumCUPerShaderArray(b.numCUPerSA).
 		WithNumShaderArray(b.numSAPerGPU).
 		WithNumMemoryBank(16).
-		WithLog2MemoryBankInterleavingSize(7).
+		// WithLog2MemoryBankInterleavingSize(7).
+		WithLog2MemoryBankInterleavingSize(b.log2CacheBlockSize + b.log2CoherenceUnitSize + 1).
 		WithLog2PageSize(b.log2PageSize).
-		WithGlobalStorage(b.globalStorage)
+		WithLog2CacheLineSize(b.log2CacheBlockSize).
+		WithLog2CoherenceUnitSize(b.log2CoherenceUnitSize).
+		WithGlobalStorage(b.globalStorage).
+		WithDriver(gpuDriver).
+		WithPageMigrationPolicy(b.pageMigrationPolicy).
+		WithCoherenceDirectory(b.coherenceDirectory).
+		WithIdealDirectory(b.idealDirectory)
+	fmt.Printf("[r9nano Builder]\tCreating GPU Builder with log2CacheLineSize %d, log2PageSize %d coherenceDirectory %d.\n",
+		b.log2CacheBlockSize, b.log2PageSize, b.coherenceDirectory)
 
 	b.createRDMAAddressMapper()
 
@@ -174,8 +222,10 @@ func (b *Builder) createGPUs(
 			lastSwitchID = pcieConnector.AddSwitch(rootComplexID)
 		}
 
+		fmt.Printf("\nCreate GPU %d\n", i)
 		b.createGPU(i, gpuBuilder, gpuDriver, pmcAddressTable,
 			pcieConnector, lastSwitchID)
+
 	}
 }
 
@@ -242,6 +292,7 @@ func (b *Builder) createGPU(
 
 	gpuDriver.RegisterGPU(
 		gpu.GetPortByName("CommandProcessor"),
+		gpu.GetPortByName("PageMigrationController"),
 		driver.DeviceProperties{
 			CUCount:  b.numCUPerSA * b.numSAPerGPU,
 			DRAMSize: 4 * mem.GB,

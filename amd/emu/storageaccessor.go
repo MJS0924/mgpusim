@@ -10,7 +10,7 @@ import (
 type storageAccessor struct {
 	storage       *mem.Storage
 	addrConverter mem.AddressConverter
-	pageTable     vm.PageTable
+	pageTable     vm.LevelPageTable
 	log2PageSize  uint64
 }
 
@@ -91,7 +91,7 @@ func (a *storageAccessor) Write(pid vm.PID, vAddr uint64, data []byte) {
 // of the storage and mmu.
 func newStorageAccessor(
 	storage *mem.Storage,
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 	log2PageSize uint64,
 	addrConverter mem.AddressConverter,
 ) *storageAccessor {

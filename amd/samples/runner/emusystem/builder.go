@@ -21,7 +21,7 @@ type Builder struct {
 	debugISA     bool
 
 	storage    *mem.Storage
-	pageTable  vm.PageTable
+	pageTable  vm.LevelPageTable
 	driver     *driver.Driver
 	connection *directconnection.Comp
 }
@@ -64,7 +64,7 @@ func (b Builder) Build() *sim.Domain {
 	domain := &sim.Domain{}
 
 	b.storage = mem.NewStorage(uint64(b.numGPUs+1) * 4 * mem.GB)
-	b.pageTable = vm.NewPageTable(b.log2PageSize)
+	b.pageTable = vm.NewLevelPageTable(b.log2PageSize, 6, "MMU.PT")
 	b.driver = b.buildDriver(b.simulation.GetEngine(), b.pageTable, b.storage)
 
 	b.connection = directconnection.MakeBuilder().
@@ -86,7 +86,8 @@ func (b Builder) Build() *sim.Domain {
 		gpu := gpuBuilder.Build(fmt.Sprintf("GPU[%d]", i+1))
 
 		cpPort := gpu.GetPortByName("CommandProcessor")
-		b.driver.RegisterGPU(cpPort, driver.DeviceProperties{
+		pmcPort := gpu.GetPortByName("PageMigrationController")
+		b.driver.RegisterGPU(cpPort, pmcPort, driver.DeviceProperties{
 			DRAMSize: 4 * mem.GB,
 			CUCount:  64,
 		})
@@ -99,7 +100,7 @@ func (b Builder) Build() *sim.Domain {
 func (b *Builder) createGPUBuilder(
 	engine sim.Engine,
 	gpuDriver *driver.Driver,
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 	storage *mem.Storage,
 ) emugpu.Builder {
 	gpuBuilder := emugpu.MakeBuilder().
@@ -118,7 +119,7 @@ func (b *Builder) createGPUBuilder(
 
 func (b *Builder) buildDriver(
 	engine sim.Engine,
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 	storage *mem.Storage,
 ) *driver.Driver {
 	gpuDriverBuilder := driver.MakeBuilder().

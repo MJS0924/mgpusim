@@ -1,6 +1,7 @@
 package pagemigrationcontroller
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
@@ -11,6 +12,7 @@ import (
 // PageMigrationController control page migration
 type PageMigrationController struct {
 	*sim.TickingComponent
+	deviceID uint64 // PMC 식별자 (GPU ID와 동일하게 설정)
 
 	remotePort   sim.Port
 	ctrlPort     sim.Port
@@ -23,10 +25,15 @@ type PageMigrationController struct {
 
 	toPullFromAnotherPMC         []*DataPullReq
 	toSendLocalMemPort           []*mem.ReadReq
+	toSendLocalMemPortCnt        uint64
 	dataReadyRspFromMemCtrl      []*mem.DataReadyRsp
+	dataReadyRspFromMemCtrlCnt   uint64
 	toRspToAnotherPMC            []*DataPullRsp
+	toRspToAnotherPMCCnt         uint64
 	receivedDataFromAnothePMC    []*DataPullRsp
+	receivedDataFromAnothePMCCnt uint64
 	writeReqLocalMemPort         []*mem.WriteReq
+	writeReqLocalMemPortCnt      uint64
 	receivedWriteDoneFromMemCtrl *mem.WriteDoneRsp
 	toSendToCtrlPort             *PageMigrationRspFromPMC
 
@@ -44,6 +51,7 @@ type PageMigrationController struct {
 	TotalDataTransferTime sim.VTimeInSec
 
 	isHandlingPageMigration bool
+	returnValue             bool
 }
 
 // Tick updates the status of a PageMigrationController.
@@ -66,6 +74,7 @@ func (e *PageMigrationController) Tick() bool {
 	madeProgress = e.processDataPullRsp() || madeProgress
 	madeProgress = e.processWriteDoneRspFromMemCtrl() || madeProgress
 
+	e.returnValue = madeProgress
 	return madeProgress
 }
 
@@ -124,6 +133,9 @@ func (e *PageMigrationController) processPageMigrationReqFromCtrlPort() bool {
 		return false
 	}
 
+	fmt.Printf("[PMC %d]\tProcess Page Migration Req From Ctrl Port: %x -> %x\n",
+		e.deviceID, e.currentMigrationRequest.ToReadFromPhysicalAddress, e.currentMigrationRequest.ToWriteToPhysicalAddress)
+
 	destination := e.currentMigrationRequest.PMCPortOfRemoteGPU
 	pageSize := e.currentMigrationRequest.PageSize
 
@@ -135,9 +147,17 @@ func (e *PageMigrationController) processPageMigrationReqFromCtrlPort() bool {
 	currentWriteAddress := e.currentMigrationRequest.ToWriteToPhysicalAddress
 
 	for i := 0; i < int(numDataTransfersForPage); i++ {
+		PTEInv := false
+		if i == int(numDataTransfersForPage)-1 {
+			PTEInv = true
+		}
+
 		req := DataPullReqBuilder{}.
 			WithSrc(e.remotePort.AsRemote()).
 			WithDst(destination).
+			WithVAddr(e.currentMigrationRequest.VitrualAddress).
+			WithPID(e.currentMigrationRequest.PID).
+			WithPTEInvalidation(PTEInv).
 			WithDataTransferSize(e.onDemandPagingDataTransferSize).
 			WithReadFromPhyAddress(startingPhysicalAddress).
 			Build()
@@ -148,6 +168,7 @@ func (e *PageMigrationController) processPageMigrationReqFromCtrlPort() bool {
 	}
 
 	e.isHandlingPageMigration = true
+	fmt.Printf("\t\tSent data pull req to remote PMC: len %d\n", len(e.toPullFromAnotherPMC))
 
 	return true
 }
@@ -172,6 +193,7 @@ func (e *PageMigrationController) sendMigrationReqToAnotherPMC() bool {
 	}
 
 	e.toPullFromAnotherPMC = newInPullFromAnotherPMC
+
 	return madeProgress
 }
 
@@ -181,6 +203,7 @@ func (e *PageMigrationController) handleDataPullReq(
 	e.remotePort.RetrieveIncoming()
 	e.currentPullReqFromAnotherPMC = append(e.currentPullReqFromAnotherPMC, req)
 	e.requestingPMCtrlPort = req.Src
+
 	return true
 }
 
@@ -216,10 +239,16 @@ func (e *PageMigrationController) sendReadReqLocalMemPort() bool {
 	newInToSendLocalMemPort := make([]*mem.ReadReq, 0)
 
 	for i := 0; i < len(e.toSendLocalMemPort); i++ {
+		// if e.toSendLocalMemPortCnt == 0 {
+		// 	fmt.Printf("[PMC %d]\tSend data read req(%x) to local mem port %s\n",
+		// 		e.deviceID, e.toSendLocalMemPort[i].GetAddress(), e.toSendLocalMemPort[i].Dst)
+		// }
+
 		sendPacket := e.toSendLocalMemPort[i]
 		sendErr := e.localMemPort.Send(sendPacket)
 		if sendErr == nil {
 			madeProgress = true
+			// e.toSendLocalMemPortCnt = (e.toSendLocalMemPortCnt + 1) % 256
 		} else {
 			newInToSendLocalMemPort = append(
 				newInToSendLocalMemPort, sendPacket)
@@ -260,6 +289,11 @@ func (e *PageMigrationController) processDataReadyRspFromMemCtrl() bool {
 	}
 
 	for i := 0; i < len(e.dataReadyRspFromMemCtrl); i++ {
+		// if e.dataReadyRspFromMemCtrlCnt == 0 {
+		// 	fmt.Printf("[PMC %d]\tReceived data ready rsp from local mem port %s\n",
+		// 		e.deviceID, e.dataReadyRspFromMemCtrl[i].Src)
+		// }
+
 		data := e.dataReadyRspFromMemCtrl[i].Data
 		rsp := DataPullRspBuilder{}.
 			WithSrc(e.remotePort.AsRemote()).
@@ -269,6 +303,8 @@ func (e *PageMigrationController) processDataReadyRspFromMemCtrl() bool {
 		rsp.ID = e.dataReadyRspFromMemCtrl[i].RespondTo
 
 		e.toRspToAnotherPMC = append(e.toRspToAnotherPMC, rsp)
+
+		e.dataReadyRspFromMemCtrlCnt = (e.dataReadyRspFromMemCtrlCnt + 1) % 256
 	}
 
 	e.dataReadyRspFromMemCtrl = nil
@@ -284,10 +320,16 @@ func (e *PageMigrationController) sendDataReadyRspToRequestingPMC() bool {
 	newInToSendRspToAnotherPMC := make([]*DataPullRsp, 0)
 
 	for i := 0; i < len(e.toRspToAnotherPMC); i++ {
+		// if e.toRspToAnotherPMCCnt == 0 {
+		// 	fmt.Printf("[PMC %d]\tSend data data ready rsp to requesting PMC %s\n",
+		// 		e.deviceID, e.toRspToAnotherPMC[i].Dst)
+		// }
+
 		sendPacket := e.toRspToAnotherPMC[i]
 		sendErr := e.remotePort.Send(sendPacket)
 		if sendErr == nil {
 			madeProgress = true
+			e.toRspToAnotherPMCCnt = (e.toRspToAnotherPMCCnt + 1) % 256
 		} else {
 			newInToSendRspToAnotherPMC = append(newInToSendRspToAnotherPMC, sendPacket)
 		}
@@ -311,6 +353,11 @@ func (e *PageMigrationController) processDataPullRsp() bool {
 	}
 
 	for i := 0; i < len(e.receivedDataFromAnothePMC); i++ {
+		// if e.receivedDataFromAnothePMCCnt == 0 {
+		// 	fmt.Printf("[PMC %d]\tReceive data read rsp from local mem port %s\n",
+		// 		e.deviceID, e.receivedDataFromAnothePMC[i].Src)
+		// }
+
 		data := e.receivedDataFromAnothePMC[i].Data
 		address, found := e.reqIDToWriteAddressMap[e.receivedDataFromAnothePMC[i].ID]
 		if !found {
@@ -325,6 +372,8 @@ func (e *PageMigrationController) processDataPullRsp() bool {
 
 		e.writeReqLocalMemPort = append(e.writeReqLocalMemPort, req)
 		delete(e.reqIDToWriteAddressMap, e.receivedDataFromAnothePMC[i].ID)
+
+		e.receivedDataFromAnothePMCCnt = (e.receivedDataFromAnothePMCCnt + 1) % 256
 	}
 
 	e.receivedDataFromAnothePMC = nil
@@ -340,10 +389,16 @@ func (e *PageMigrationController) sendWriteReqLocalMemPort() bool {
 	newInWriteReqLocalMemPort := make([]*mem.WriteReq, 0)
 
 	for i := 0; i < len(e.writeReqLocalMemPort); i++ {
+		// if e.writeReqLocalMemPortCnt == 0 {
+		// 	fmt.Printf("[PMC %d]\tWrite data at local mem %s\n",
+		// 		e.deviceID, e.writeReqLocalMemPort[i].Dst)
+		// }
+
 		err := e.localMemPort.Send(e.writeReqLocalMemPort[i])
 		if err == nil {
 			//log.Printf("Sending write req to mem ctrl with ID %d", e.writeReqLocalMemPort[i].ID)
 			madeProgress = true
+			e.writeReqLocalMemPortCnt = (e.writeReqLocalMemPortCnt + 1) % 256
 		} else {
 			newInWriteReqLocalMemPort = append(newInWriteReqLocalMemPort, e.writeReqLocalMemPort[i])
 		}
@@ -381,6 +436,8 @@ func (e *PageMigrationController) processWriteDoneRspFromMemCtrl() bool {
 		e.toSendToCtrlPort = rsp
 		e.currentMigrationRequest = nil
 		e.numDataRspPendingForPageMigration = -1
+
+		fmt.Printf("[PMC %d]\tSending migration complete rsp to CtrlPort\n", e.deviceID)
 	}
 
 	return true
@@ -413,11 +470,13 @@ func (e *PageMigrationController) SetFreq(freq sim.Freq) {
 // NewPageMigrationController returns a new controller
 func NewPageMigrationController(
 	name string,
+	deviceID uint64,
 	engine sim.Engine,
 	memCtrlFinder mem.AddressToPortMapper,
 	remoteModules mem.AddressToPortMapper,
 ) *PageMigrationController {
 	e := new(PageMigrationController)
+	e.deviceID = deviceID
 	e.TickingComponent = sim.NewTickingComponent(name, engine, 1*sim.GHz, e)
 	e.MemCtrlFinder = memCtrlFinder
 

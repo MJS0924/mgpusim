@@ -2,6 +2,7 @@
 package internal
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/sarchlab/akita/v4/mem/vm"
@@ -22,11 +23,13 @@ type MemoryAllocator interface {
 		vAddr uint64,
 		unified bool,
 	) vm.Page
+	CountMemUsage(deviceID uint64, byteSize uint64, remove bool)
+	GetMemUsage(deviceID uint64) uint64
 }
 
 // NewMemoryAllocator creates a new memory allocator.
 func NewMemoryAllocator(
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 	log2PageSize uint64,
 ) MemoryAllocator {
 	a := &memoryAllocatorImpl{
@@ -49,12 +52,14 @@ type processMemoryState struct {
 // memoryAllocator
 type memoryAllocatorImpl struct {
 	sync.Mutex
-	pageTable            vm.PageTable
+	pageTable            vm.LevelPageTable
 	log2PageSize         uint64
 	vAddrToPageMapping   map[uint64]vm.Page
 	processMemoryStates  map[vm.PID]*processMemoryState
 	devices              map[int]*Device
 	totalStorageByteSize uint64
+	allocatedMemSize     map[uint64]uint64 // deviceID -> bytes allocated
+	nextDeviceID         int               // page 할당할 device ID: RR 방식으로 할당
 }
 
 func (a *memoryAllocatorImpl) RegisterDevice(device *Device) {
@@ -109,6 +114,8 @@ func (a *memoryAllocatorImpl) Allocate(
 
 	pageSize := uint64(1 << a.log2PageSize)
 	numPages := (byteSize-1)/pageSize + 1
+
+	fmt.Printf("[MemoryAllocator]\t%d Byte Request\n\t\t\tAllocating %d pages for pid %d on device %d\n", byteSize, numPages, pid, deviceID)
 	return a.allocatePages(int(numPages), pid, deviceID, false)
 }
 
@@ -123,9 +130,37 @@ func (a *memoryAllocatorImpl) AllocateUnified(
 	a.Lock()
 	defer a.Unlock()
 
+	const chunkBytes = 2 * 1024 * 1024 // 2MB per RR chunk
 	pageSize := uint64(1 << a.log2PageSize)
 	numPages := (byteSize-1)/pageSize + 1
-	return a.allocatePages(int(numPages), pid, 1, true)
+	pagesPerChunk := uint64(chunkBytes) / pageSize
+	if pagesPerChunk == 0 {
+		pagesPerChunk = 1
+	}
+
+	var firstVAddr uint64
+	remainingPages := numPages
+	first := true
+
+	for remainingPages > 0 {
+		chunkPages := pagesPerChunk
+		if chunkPages > remainingPages {
+			chunkPages = remainingPages
+		}
+
+		deviceID := a.nextDeviceID + 2
+		a.nextDeviceID = (a.nextDeviceID + 1) % (len(a.devices) - 3)
+
+		vAddr := a.allocatePages(int(chunkPages), pid, deviceID, true)
+		if first {
+			firstVAddr = vAddr
+			first = false
+		}
+		remainingPages -= chunkPages
+	}
+
+	fmt.Printf("[MemoryAllocator]\t%d Byte Request\n\t\t\tAllocating %d pages in 2MB RR chunks across GPUs\n", byteSize, numPages)
+	return firstVAddr
 }
 
 func (a *memoryAllocatorImpl) allocatePages(
@@ -150,6 +185,7 @@ func (a *memoryAllocatorImpl) allocatePages(
 	for i := 0; i < numPages; i++ {
 		pAddr := device.allocatePage()
 		vAddr := nextVAddr + uint64(i)*pageSize
+		a.CountMemUsage(uint64(deviceID), pageSize, false)
 
 		page := vm.Page{
 			PID:      pid,
@@ -170,6 +206,30 @@ func (a *memoryAllocatorImpl) allocatePages(
 	pState.nextVAddr += pageSize * uint64(numPages)
 
 	return nextVAddr
+}
+
+func (a *memoryAllocatorImpl) CountMemUsage(
+	deviceID uint64,
+	byteSize uint64,
+	remove bool,
+) {
+	if a.allocatedMemSize == nil {
+		a.allocatedMemSize = make(map[uint64]uint64)
+	}
+
+	if _, found := a.allocatedMemSize[deviceID]; !found {
+		a.allocatedMemSize[deviceID] = 0
+	}
+
+	if remove {
+		if a.allocatedMemSize[deviceID] < byteSize {
+			a.allocatedMemSize[deviceID] = 0
+		} else {
+			a.allocatedMemSize[deviceID] -= byteSize
+		}
+	} else {
+		a.allocatedMemSize[deviceID] += byteSize
+	}
 }
 
 func (a *memoryAllocatorImpl) Remap(
@@ -209,6 +269,7 @@ func (a *memoryAllocatorImpl) removePage(vAddr uint64) {
 	dState := a.devices[deviceID].MemState
 	dState.addSinglePAddr(page.PAddr)
 
+	a.CountMemUsage(uint64(deviceID), a.log2PageSize, true)
 	a.pageTable.Remove(page.PID, page.VAddr)
 }
 
@@ -246,6 +307,7 @@ func (a *memoryAllocatorImpl) allocatePageWithGivenVAddr(
 	}
 	a.vAddrToPageMapping[page.VAddr] = page
 	a.pageTable.Update(page)
+	a.CountMemUsage(uint64(deviceID), pageSize, false)
 
 	return page
 }
@@ -274,6 +336,7 @@ func (a *memoryAllocatorImpl) allocateMultiplePagesWithGivenVAddrs(
 		a.vAddrToPageMapping[page.VAddr] = page
 		a.pageTable.Update(page)
 		pages = append(pages, page)
+		a.CountMemUsage(uint64(deviceID), pageSize, false)
 	}
 
 	return pages
@@ -284,4 +347,16 @@ func (a *memoryAllocatorImpl) Free(ptr uint64) {
 	defer a.Unlock()
 
 	a.removePage(ptr)
+}
+
+func (a *memoryAllocatorImpl) GetMemUsage(deviceID uint64) uint64 {
+	if a.allocatedMemSize == nil {
+		return 0
+	}
+
+	if _, found := a.allocatedMemSize[deviceID]; !found {
+		return 0
+	}
+
+	return a.allocatedMemSize[deviceID]
 }

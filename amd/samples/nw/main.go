@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var length = flag.Int("length", 64, "The number bases in the gene sequence")
+var length = flag.Int("length", 1024, "The number bases in the gene sequence")
 
 func main() {
 	flag.Parse()

@@ -7,6 +7,7 @@ import (
 	"github.com/sarchlab/akita/v4/monitoring"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/tracing"
+	"github.com/sarchlab/mgpusim/v4/amd/driver"
 	"github.com/sarchlab/mgpusim/v4/amd/protocol"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cp/internal/dispatching"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cp/internal/resource"
@@ -14,12 +15,15 @@ import (
 
 // Builder can build Command Processors
 type Builder struct {
-	freq           sim.Freq
-	engine         sim.Engine
-	visTracer      tracing.Tracer
-	monitor        *monitoring.Monitor
-	perfAnalyzer   *analysis.PerfAnalyzer
-	numDispatchers int
+	deviceID            uint32
+	freq                sim.Freq
+	engine              sim.Engine
+	visTracer           tracing.Tracer
+	monitor             *monitoring.Monitor
+	perfAnalyzer        *analysis.PerfAnalyzer
+	driver              *driver.Driver
+	numDispatchers      int
+	pageMigrationPolicy uint64
 }
 
 // MakeBuilder creates a new builder with default configuration values.
@@ -28,6 +32,13 @@ func MakeBuilder() Builder {
 		freq:           1 * sim.GHz,
 		numDispatchers: 8,
 	}
+	return b
+}
+
+// WithVisTracer enables tracing for visualization on the command processor and
+// the dispatchers.
+func (b Builder) WithDeviceID(deviceID uint32) Builder {
+	b.deviceID = deviceID
 	return b
 }
 
@@ -65,10 +76,28 @@ func (b Builder) WithPerfAnalyzer(
 	return b
 }
 
+// WithPerfAnalyzer sets the buffer analyzer used to analyze the
+// command processor's buffers.
+func (b Builder) WithDriver(
+	driver *driver.Driver,
+) Builder {
+	b.driver = driver
+	return b
+}
+
+func (b Builder) WithPageMigrationPolicy(policy uint64) Builder {
+	b.pageMigrationPolicy = policy
+	return b
+}
+
 // Build builds a new Command Processor
 func (b Builder) Build(name string) *CommandProcessor {
 	cp := new(CommandProcessor)
+	cp.deviceID = b.deviceID
 	cp.TickingComponent = sim.NewTickingComponent(name, b.engine, b.freq, cp)
+	cp.pageMigrationPolicy = b.pageMigrationPolicy
+
+	cp.Driver = b.driver.GetPortByName("GPU")
 
 	b.createPorts(cp, name)
 
@@ -79,11 +108,18 @@ func (b Builder) Build(name string) *CommandProcessor {
 	cp.bottomMemCopyD2HReqIDToTopReqMap =
 		make(map[string]*protocol.MemCopyD2HReq)
 
+	tracing.CollectTrace(cp, b.visTracer)
+
 	b.buildDispatchers(cp)
 
 	if b.perfAnalyzer != nil {
 		b.perfAnalyzer.RegisterComponent(cp)
 	}
+
+	cp.returnValue = append(cp.returnValue, false)
+	cp.returnValue = append(cp.returnValue, false)
+	cp.returnValue = append(cp.returnValue, false)
+	cp.returnValue = append(cp.returnValue, false)
 
 	return cp
 }
@@ -92,12 +128,15 @@ func (Builder) createPorts(cp *CommandProcessor, name string) {
 	cp.ToDriver = sim.NewPort(cp, 4096, 4096, name+".ToDriver")
 	cp.ToDMA = sim.NewPort(cp, 4096, 4096, name+".ToDispatcher")
 	cp.ToCUs = sim.NewPort(cp, 4096, 4096, name+".ToCUs")
+	cp.ToROBs = sim.NewPort(cp, 4096, 4096, name+".ToROBs")
 	cp.ToTLBs = sim.NewPort(cp, 4096, 4096, name+".ToTLBs")
 	cp.ToRDMA = sim.NewPort(cp, 4096, 4096, name+".ToRDMA")
 	cp.ToPMC = sim.NewPort(cp, 4096, 4096, name+".ToPMC")
 	cp.ToAddressTranslators = sim.NewPort(cp, 4096, 4096,
 		name+".ToAddressTranslators")
+	cp.ToCohDir = sim.NewPort(cp, 4096, 4096, name+".ToCohDir")
 	cp.ToCaches = sim.NewPort(cp, 4096, 4096, name+".ToCaches")
+	cp.ToGMMU = sim.NewPort(cp, 4096, 4096, name+".ToGMMU")
 }
 
 func (b *Builder) buildDispatchers(cp *CommandProcessor) {

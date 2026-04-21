@@ -75,6 +75,19 @@ var visTraceEndTime = flag.Float64("trace-vis-end", -1,
 	"The end time of collecting visualization traces. A negative number"+
 		"means that the trace will be collected to the end of the simulation.")
 
+var log2PageSize = flag.Uint64("log2-page-size", 12,
+	"Log2 of the page size in bytes.")
+var log2CacheBlockSize = flag.Uint64("log2-cache-block-size", 6,
+	"Log2 of the cache block size in bytes.")
+var pageMigrationPolicy = flag.String("page-migration-policy", "AccessCounter",
+	"Page migration policy.")
+var coherenceDirectory = flag.String("coherence-directory", "CoherenceDirectory",
+	"Kind of coherence directory")
+var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
+	"Log2 of coherence mgmt. unit size")
+var idealDirectory = flag.Bool("ideal-directory", false,
+	"Use Ideal directory(no eviction)")
+
 // parseFlag applies the runner flag to runner object
 func (r *Runner) parseFlag() *Runner {
 	r.parseSimulationFlags()
@@ -119,6 +132,37 @@ func (r *Runner) parseGPUFlag() {
 	}
 
 	r.GPUIDs = gpuIDs
+
+	r.log2PageSize = *log2PageSize
+	r.log2CacheBlockSize = *log2CacheBlockSize
+	switch *pageMigrationPolicy {
+	case "AccessCounter":
+		r.pageMigrationPolicy = 0
+	case "Duplication":
+		r.pageMigrationPolicy = 1
+	default:
+		panic("unknown page migration policy: " + *pageMigrationPolicy)
+	}
+
+	switch *coherenceDirectory {
+	case "CoherenceDirectory":
+		r.coherenceDirectory = 0
+	case "LargeBlockCache":
+		r.coherenceDirectory = 1
+	case "SuperDirectory":
+		r.coherenceDirectory = 2
+	case "REC":
+		r.coherenceDirectory = 3
+	case "HMG":
+		r.coherenceDirectory = 4
+	}
+
+	r.log2CoherenceUnitSize = *coherenceUnitSize
+	// if r.log2CoherenceUnitSize != 0 && r.coherenceDirectory != 0 {
+	// 	r.coherenceDirectory = 0
+	// }
+
+	r.idealDirectory = *idealDirectory
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

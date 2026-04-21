@@ -19,6 +19,8 @@ type transaction struct {
 type ReorderBuffer struct {
 	*sim.TickingComponent
 
+	name string
+
 	topPort     sim.Port
 	bottomPort  sim.Port
 	controlPort sim.Port
@@ -63,10 +65,12 @@ func (b *ReorderBuffer) processControlMsg() (madeProgress bool) {
 func (b *ReorderBuffer) discardTransactions(
 	msg *mem.ControlMsg,
 ) (madeProgress bool) {
+
 	rsp := mem.ControlMsgBuilder{}.
 		WithSrc(b.controlPort.AsRemote()).
 		WithDst(msg.Src).
 		ToNotifyDone().
+		ToDiscardTransactions().
 		Build()
 
 	err := b.controlPort.Send(rsp)
@@ -91,6 +95,7 @@ func (b *ReorderBuffer) restart(
 		WithSrc(b.controlPort.AsRemote()).
 		WithDst(msg.Src).
 		ToNotifyDone().
+		ToRestart().
 		Build()
 
 	err := b.controlPort.Send(rsp)
@@ -245,6 +250,10 @@ func (b *ReorderBuffer) isFull() bool {
 	return b.transactions.Len() >= b.bufferSize
 }
 
+func (b *ReorderBuffer) isEmpty() bool {
+	return b.transactions.Len() == 0
+}
+
 func (b *ReorderBuffer) createTransaction(req mem.AccessReq) *transaction {
 	return &transaction{
 		reqFromTop:  req,
@@ -314,6 +323,7 @@ func (b *ReorderBuffer) duplicateDataReadyRsp(
 	return mem.DataReadyRspBuilder{}.
 		WithData(rsp.Data).
 		WithRspTo(rspTo).
+		WithOrigin(rsp.Origin).
 		Build()
 }
 
@@ -323,5 +333,6 @@ func (b *ReorderBuffer) duplicateWriteDoneRsp(
 ) *mem.WriteDoneRsp {
 	return mem.WriteDoneRspBuilder{}.
 		WithRspTo(rspTo).
+		WithOrigin(rsp.Origin).
 		Build()
 }

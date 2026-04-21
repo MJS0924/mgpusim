@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"runtime/debug"
@@ -19,7 +20,8 @@ import (
 
 // Driver is an Akita component that controls the simulated GPUs
 type Driver struct {
-	*sim.TickingComponent
+	sim.TickingComponent
+	sim.HookableBase
 
 	memAllocator  internal.MemoryAllocator
 	distributor   distributor
@@ -27,7 +29,7 @@ type Driver struct {
 
 	GPUs        []sim.Port
 	devices     []*internal.Device
-	pageTable   vm.PageTable
+	pageTable   vm.LevelPageTable
 	middlewares []Middleware
 
 	requestsToSend []sim.Msg
@@ -45,20 +47,32 @@ type Driver struct {
 	engineRunningMutex sync.Mutex
 	simulationID       string
 
-	Log2PageSize uint64
+	Log2PageSize      uint64
+	Log2CacheLineSize uint64
 
 	currentPageMigrationReq         *vm.PageMigrationReqToDriver
 	toSendToMMU                     *vm.PageMigrationRspFromDriver
 	migrationReqToSendToCP          []*protocol.PageMigrationReqToCP
+	invalidationReqToSendToCP       []*vm.PTEInvalidationReq
 	isCurrentlyHandlingMigrationReq bool
 	numRDMADrainACK                 uint64
 	numRDMARestartACK               uint64
 	numShootDownACK                 uint64
 	numRestartACK                   uint64
 	numPagesMigratingACK            uint64
+	numInvalidationACK              uint64
 	isCurrentlyMigratingOnePage     bool
 
 	RemotePMCPorts []sim.Port
+	shootDownReqID map[uint64]string
+
+	DirtyMask           []map[vm.PID]map[uint64][]uint8
+	ReadMask            []map[vm.PID]map[uint64][]uint8
+	pageMigrationPolicy uint64
+
+	returnValue       []string
+	runAsyncOperating bool
+	printOnce         bool
 }
 
 // Run starts a new threads that handles all commands in the command queues
@@ -89,25 +103,39 @@ func (d *Driver) logSimulationTerminate() {
 }
 
 func (d *Driver) runAsync() {
+	d.runAsyncOperating = false
 	for {
 		select {
 		case <-d.driverStopped:
+			// 해당 채널로 신호가 들어오면 return을 통해 반복문 탈출
+			d.runAsyncOperating = false
 			return
 		case <-d.enqueueSignal:
+			// 새로운 작업을 큐에 추가
+			d.engineMutex.Lock()
 			d.Engine.Pause()
 			d.TickLater()
+			fmt.Printf("[Driver DEBUF 1]\tqueue len: %d, 2ndQueue len: %d\n",
+				d.TickingComponent.Engine.(*sim.SerialEngine).GetQueue().Len(), d.TickingComponent.Engine.(*sim.SerialEngine).GetSecondaryQueue().Len())
 			d.Engine.Continue()
+			d.engineMutex.Unlock()
+			// 상태를 변경하기 전에 engine을 일시정지
 
 			d.engineRunningMutex.Lock()
 			if d.engineRunning {
+				fmt.Printf("[Driver DEBUF 2]\tEngine is running, skip d.runEngine\n")
 				d.engineRunningMutex.Unlock()
 				continue
 			}
 
 			d.engineRunning = true
+			fmt.Printf("[Driver DEBUF 3]\tqueue len: %d, 2ndQueue len: %d\n",
+				d.TickingComponent.Engine.(*sim.SerialEngine).GetQueue().Len(), d.TickingComponent.Engine.(*sim.SerialEngine).GetSecondaryQueue().Len())
 			go d.runEngine()
 			d.engineRunningMutex.Unlock()
 		}
+
+		d.runAsyncOperating = true
 	}
 }
 
@@ -122,12 +150,15 @@ func (d *Driver) runEngine() {
 
 	d.engineMutex.Lock()
 	defer d.engineMutex.Unlock()
+	fmt.Printf("[Driver DEBUF 4]\tqueue len: %d, 2ndQueue len: %d\n",
+		d.TickingComponent.Engine.(*sim.SerialEngine).GetQueue().Len(), d.TickingComponent.Engine.(*sim.SerialEngine).GetSecondaryQueue().Len())
 	err := d.Engine.Run()
 	if err != nil {
 		panic(err)
 	}
 
 	d.engineRunningMutex.Lock()
+	fmt.Printf("[Driver DEBUF 5]\tEngine stops running\n")
 	d.engineRunning = false
 	d.engineRunningMutex.Unlock()
 }
@@ -141,9 +172,11 @@ type DeviceProperties struct {
 // RegisterGPU tells the driver about the existence of a GPU
 func (d *Driver) RegisterGPU(
 	commandProcessorPort sim.Port,
+	pageMigrationController sim.Port,
 	properties DeviceProperties,
 ) {
 	d.GPUs = append(d.GPUs, commandProcessorPort)
+	d.RemotePMCPorts = append(d.RemotePMCPorts, pageMigrationController)
 
 	gpuDevice := &internal.Device{
 		ID:       len(d.GPUs),
@@ -167,6 +200,7 @@ func (d *Driver) Tick() bool {
 	madeProgress = d.sendToGPUs() || madeProgress
 	madeProgress = d.sendToMMU() || madeProgress
 	madeProgress = d.sendMigrationReqToCP() || madeProgress
+	madeProgress = d.sendInvalidationReqToCP() || madeProgress
 
 	for _, mw := range d.middlewares {
 		madeProgress = mw.Tick() || madeProgress
@@ -180,7 +214,9 @@ func (d *Driver) Tick() bool {
 }
 
 func (d *Driver) sendToGPUs() bool {
+	d.returnValue[0] = "true"
 	if len(d.requestsToSend) == 0 {
+		d.returnValue[0] = "false"
 		return false
 	}
 
@@ -188,6 +224,13 @@ func (d *Driver) sendToGPUs() bool {
 	err := d.gpuPort.Send(req)
 	if err == nil {
 		d.requestsToSend = d.requestsToSend[1:]
+
+		switch req := req.(type) {
+		case *protocol.RDMARestartCmdFromDriver:
+			fmt.Printf("[Driver]\tSuccess to send RDMA restart cmd. to %s\n", req.Dst)
+		case *protocol.MemCopyD2HReq:
+			fmt.Printf("[Driver]\tSuccess to send mem copy D2H req. to %s\n", req.Dst)
+		}
 		return true
 	}
 
@@ -196,8 +239,10 @@ func (d *Driver) sendToGPUs() bool {
 
 //nolint:gocyclo
 func (d *Driver) processReturnReq() bool {
+	d.returnValue[3] = "true"
 	req := d.gpuPort.PeekIncoming()
 	if req == nil {
+		d.returnValue[3] = "false"
 		return false
 	}
 
@@ -214,6 +259,9 @@ func (d *Driver) processReturnReq() bool {
 	case *protocol.PageMigrationRspToDriver:
 		d.gpuPort.RetrieveIncoming()
 		return d.processPageMigrationRspFromCP(req)
+	case *vm.PTEInvalidationRsp:
+		d.gpuPort.RetrieveIncoming()
+		return d.processInvalidationRspFromCP(req)
 	case *protocol.RDMARestartRspToDriver:
 		d.gpuPort.RetrieveIncoming()
 		return d.processRDMARestartRspToDriver(req)
@@ -234,6 +282,11 @@ func (d *Driver) processNewCommand() bool {
 	}
 	d.contextMutex.Unlock()
 
+	if madeProgress {
+		d.returnValue[26] = "true"
+	} else {
+		d.returnValue[26] = "false"
+	}
 	return madeProgress
 }
 
@@ -247,17 +300,27 @@ func (d *Driver) processNewCommandFromContext(
 	}
 	ctx.queueMutex.Unlock()
 
+	if madeProgress {
+		d.returnValue[25] = "true"
+	} else {
+		d.returnValue[25] = "false"
+	}
 	return madeProgress
 }
 
 func (d *Driver) processNewCommandFromCmdQueue(
 	q *CommandQueue,
 ) bool {
+	d.returnValue[5] = "true"
+	d.returnValue[6] = "true"
+
 	if q.NumCommand() == 0 {
+		d.returnValue[5] = "false"
 		return false
 	}
 
 	if q.IsRunning {
+		d.returnValue[6] = "false"
 		return false
 	}
 
@@ -288,6 +351,8 @@ func (d *Driver) processCommandWithMiddleware(
 	cmd Command,
 	cmdQueue *CommandQueue,
 ) bool {
+	d.returnValue[8] = "true"
+
 	for _, m := range d.middlewares {
 		processed := m.ProcessCommand(cmd, cmdQueue)
 
@@ -297,6 +362,7 @@ func (d *Driver) processCommandWithMiddleware(
 		}
 	}
 
+	d.returnValue[8] = "false"
 	return false
 }
 
@@ -365,6 +431,7 @@ func (d *Driver) processUnifiedMultiGPULaunchKernelCommand(
 	cmd *LaunchUnifiedMultiGPUKernelCommand,
 	queue *CommandQueue,
 ) bool {
+	d.returnValue[10] = "true"
 	wgDist := d.distributeWGToGPUs(queue, cmd)
 
 	dev := d.devices[queue.GPUID]
@@ -397,6 +464,7 @@ func (d *Driver) processUnifiedMultiGPULaunchKernelCommand(
 				return true
 			}
 
+			d.returnValue[10] = "false"
 			return false
 		}
 
@@ -424,7 +492,10 @@ func (d *Driver) distributeWGToGPUs(
 	wgDist := make([]int, len(actualGPUs)+1)
 
 	totalCUCount := 0
-	for _, devID := range actualGPUs {
+	for i, devID := range actualGPUs {
+		if i == 0 {
+			continue
+		}
 		totalCUCount += d.devices[devID].Properties.CUCount
 	}
 
@@ -435,6 +506,9 @@ func (d *Driver) distributeWGToGPUs(
 	wgPerCU := (totalWGCount-1)/totalCUCount + 1
 
 	for i, devID := range actualGPUs {
+		if i == 0 {
+			continue
+		}
 		cuCount := d.devices[devID].Properties.CUCount
 		wgToAllocate := cuCount * wgPerCU
 		wgDist[i+1] = wgAllocated + wgToAllocate
@@ -445,6 +519,7 @@ func (d *Driver) distributeWGToGPUs(
 		panic("not all wg allocated")
 	}
 
+	// fmt.Printf("[Driver]\tUnified Multi-GPU Kernel Launch WG Distribution: %v\n", wgDist)
 	return wgDist
 }
 
@@ -525,47 +600,87 @@ func (d *Driver) findCommandByReqID(reqID string) (
 }
 
 func (d *Driver) parseFromMMU() bool {
-	if d.isCurrentlyHandlingMigrationReq {
-		return false
-	}
+	d.returnValue[12] = "true"
+	d.returnValue[13] = "true"
 
-	req := d.mmuPort.RetrieveIncoming()
+	req := d.mmuPort.PeekIncoming()
 	if req == nil {
+		d.returnValue[12] = "false"
 		return false
 	}
 
 	switch req := req.(type) {
 	case *vm.PageMigrationReqToDriver:
+		if d.isCurrentlyHandlingMigrationReq {
+			d.returnValue[13] = "false"
+			return false
+		}
+
 		d.currentPageMigrationReq = req
 		d.isCurrentlyHandlingMigrationReq = true
-		d.initiateRDMADrain()
+		d.initiateShootDown()
+		// d.initiateRDMADrain()
+	case *vm.RemoveRequestRspFromMMU:
+		d.processRemoveRequestRspFromMMU(req)
 	default:
 		log.Panicf("Driver cannot handle request of type %s",
 			reflect.TypeOf(req))
 	}
 
+	d.mmuPort.RetrieveIncoming()
 	return true
 }
 
-func (d *Driver) initiateRDMADrain() bool {
-	for i := 0; i < len(d.GPUs); i++ {
-		req := protocol.NewRDMADrainCmdFromDriver(d.gpuPort,
-			d.GPUs[i])
-		d.requestsToSend = append(d.requestsToSend, req)
-		d.numRDMADrainACK++
+func (d *Driver) initiateShootDown() bool {
+
+	kind := "Page Migration"
+	if d.currentPageMigrationReq.ForDuplication {
+		kind = "Page Duplication"
+	} else if d.currentPageMigrationReq.ForInvalidation {
+		kind = "Page Invalidation"
+	}
+	tracing.StartTask(
+		d.currentPageMigrationReq.Meta().ID,
+		d.simulationID,
+		d,
+		kind,
+		fmt.Sprintf("From GPU %d to GPU %d, VA %d",
+			d.currentPageMigrationReq.CurrPageHostGPU, d.currentPageMigrationReq.RequestingDevice,
+			d.currentPageMigrationReq.MigrationInfo.GPUReqToVAddrMap[d.currentPageMigrationReq.RequestingDevice][0]),
+		nil,
+	)
+
+	va := d.currentPageMigrationReq.MigrationInfo.GPUReqToVAddrMap[d.currentPageMigrationReq.RequestingDevice][0]
+	fmt.Printf("\n======================================================================================\n")
+	fmt.Printf("[Driver]\tStart %s VPN %x from GPU %d to GPU %d\n",
+		kind,
+		va,
+		d.currentPageMigrationReq.CurrPageHostGPU,
+		d.currentPageMigrationReq.RequestingDevice,
+	)
+	// for i, list := range d.DirtyMask {
+	// 	fmt.Printf("\t\tDirtyMask GPU %d: %v\n", i+1, list[d.currentPageMigrationReq.PID][va>>d.Log2PageSize])
+	// }
+	// for i, list := range d.ReadMask {
+	// 	fmt.Printf("\t\tReadMask  GPU %d: %v\n", i+1, list[d.currentPageMigrationReq.PID][va>>d.Log2PageSize])
+	// }
+	fmt.Printf("======================================================================================\n\n")
+
+	if d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1] == nil || d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1] == nil {
+		d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1] = make(map[vm.PID]map[uint64][]uint8)
+		d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1] = make(map[vm.PID]map[uint64][]uint8)
+	}
+	if d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] == nil || d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] == nil {
+		d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
+		d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
 	}
 
-	return true
-}
-
-func (d *Driver) processRDMADrainRsp(
-	req *protocol.RDMADrainRspToDriver,
-) bool {
-	d.numRDMADrainACK--
-
-	if d.numRDMADrainACK == 0 {
-		d.sendShootDownReqs()
+	if kind != "Page Duplication" {
+		d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
+		d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
 	}
+
+	d.sendShootDownReqs()
 
 	return true
 }
@@ -586,18 +701,88 @@ func (d *Driver) sendShootDownReqs() bool {
 		}
 	}
 
+	fmt.Printf("[Driver]\tCurrent Page Host GPU: %d\n", d.currentPageMigrationReq.CurrPageHostGPU)
+	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
+		fmt.Printf("[Driver]\tSkip GPU Shoot Down Because of 1st touch\n")
+		d.numShootDownACK++
+		return d.processShootdownCompleteRsp(nil)
+	}
+
 	accessingGPUs := d.currentPageMigrationReq.CurrAccessingGPUs
 	pid := d.currentPageMigrationReq.PID
-	d.numShootDownACK = uint64(len(accessingGPUs))
 
-	for i := 0; i < len(accessingGPUs); i++ {
-		toShootdownGPU := accessingGPUs[i] - 1
+	fmt.Printf("[Driver]\tInitiate GPU Shoot Down: ")
+	for i, _ := range d.GPUs {
+		// remote caching이 추가됨에 따라 모든 GPU가 멈춰야 함..
+		// 단, GPU 1에서 이동하는 경우는 멈춤 x
+
+		if i == 0 { // GPU 1은 dummy라서 shootdown 필요 없음
+			continue
+		}
+
+		toShootdownGPU := uint64(i)
 		shootDownReq := protocol.NewShootdownCommand(
 			d.gpuPort, d.GPUs[toShootdownGPU],
 			vAddr, pid)
+		for _, j := range accessingGPUs {
+			if uint64(i) == j {
+				shootDownReq.ToAccessingGPU = true
+				break
+			}
+		}
+
 		d.requestsToSend = append(d.requestsToSend, shootDownReq)
+		d.numShootDownACK++
+
+		kind := "Page Migration"
+		if d.currentPageMigrationReq.ForDuplication {
+			kind = "Page Duplication"
+			shootDownReq.ForDuplication = true
+		} else if d.currentPageMigrationReq.ForInvalidation {
+			kind = "Page Invalidation"
+			shootDownReq.ForInvalidation = true
+		}
+		tracing.StartTask(
+			shootDownReq.Meta().ID,
+			d.currentPageMigrationReq.Meta().ID,
+			d,
+			kind,
+			fmt.Sprintf("Shootdown GPU %d", toShootdownGPU+1),
+			nil,
+		)
+		d.shootDownReqID[toShootdownGPU] = shootDownReq.Meta().ID
+
+		va := d.currentPageMigrationReq.MigrationInfo.GPUReqToVAddrMap[d.currentPageMigrationReq.RequestingDevice][0]
+
+		if d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1] == nil || d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1] == nil {
+			d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1] = make(map[vm.PID]map[uint64][]uint8)
+			d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1] = make(map[vm.PID]map[uint64][]uint8)
+		}
+		if d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] == nil || d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] == nil {
+			d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
+			d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
+		}
+		d.DirtyMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
+		d.ReadMask[d.currentPageMigrationReq.RequestingDevice-1][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
+
+		if d.DirtyMask[toShootdownGPU] == nil || d.ReadMask[toShootdownGPU] == nil {
+			d.DirtyMask[toShootdownGPU] = make(map[vm.PID]map[uint64][]uint8)
+			d.ReadMask[toShootdownGPU] = make(map[vm.PID]map[uint64][]uint8)
+		}
+		if d.DirtyMask[toShootdownGPU][d.currentPageMigrationReq.PID] == nil || d.ReadMask[toShootdownGPU][d.currentPageMigrationReq.PID] == nil {
+			d.DirtyMask[toShootdownGPU][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
+			d.ReadMask[toShootdownGPU][d.currentPageMigrationReq.PID] = make(map[uint64][]uint8)
+		}
+
+		if kind != "Page Duplication" {
+			d.DirtyMask[toShootdownGPU][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
+			d.ReadMask[toShootdownGPU][d.currentPageMigrationReq.PID][va>>d.Log2PageSize] = nil
+		}
+
+		fmt.Printf("GPU %d ", toShootdownGPU+1)
 	}
 
+	fmt.Print("\n")
 	return true
 }
 
@@ -607,6 +792,41 @@ func (d *Driver) processShootdownCompleteRsp(
 	d.numShootDownACK--
 
 	if d.numShootDownACK == 0 {
+		fmt.Printf("[Driver]\tComplete ShootDown\n\t\tInitiate RDMA Drain\n")
+
+		return d.initiateRDMADrain()
+	}
+
+	return true
+}
+
+func (d *Driver) initiateRDMADrain() bool {
+	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
+		fmt.Printf("[Driver]\tSkip RDMA Drain Because of 1st touch\n")
+		d.numRDMADrainACK++
+		d.processRDMADrainRsp(nil)
+
+		return true
+	}
+
+	for i := 0; i < len(d.GPUs); i++ {
+		req := protocol.NewRDMADrainCmdFromDriver(d.gpuPort,
+			d.GPUs[i])
+		d.requestsToSend = append(d.requestsToSend, req)
+		d.numRDMADrainACK++
+	}
+
+	return true
+}
+
+func (d *Driver) processRDMADrainRsp(
+	req *protocol.RDMADrainRspToDriver,
+) bool {
+	d.numRDMADrainACK--
+
+	if d.numRDMADrainACK == 0 {
+		fmt.Printf("[Driver]\tComplete RDMA Drain\n\t\tPrepare Migration Req to CP: ")
+
 		toRequestFromGPU := d.currentPageMigrationReq.CurrPageHostGPU
 		toRequestFromPMCPort := d.RemotePMCPorts[toRequestFromGPU-1]
 
@@ -624,9 +844,23 @@ func (d *Driver) processShootdownCompleteRsp(
 
 		for gpuID, vAddrs := range pageVaddrs {
 			for i := 0; i < len(vAddrs); i++ {
+				fmt.Printf("%x ", vAddrs[i])
+
 				vAddr := vAddrs[i]
-				page, oldPAddr :=
-					d.preparePageForMigration(vAddr, context, gpuID)
+				var page *vm.Page
+				var oldPAddr, oldDeviceID uint64
+				if d.currentPageMigrationReq.ForDuplication {
+					page, oldPAddr, oldDeviceID = d.preparePageForDuplication(vAddr, context, gpuID)
+				} else if d.currentPageMigrationReq.ForInvalidation {
+					page, oldPAddr, oldDeviceID = d.preparePageForInvalidation(vAddr, context, gpuID)
+				} else {
+					page, oldPAddr, oldDeviceID = d.preparePageForMigration(vAddr, context, gpuID)
+				}
+
+				if page.DeviceID == oldDeviceID && d.currentPageMigrationReq.ForInvalidation {
+					// Duplication policy에서 invalidation 시, 이미 해당 page가 GPU에 존재하는 경우, migration을 하지 않음
+					continue
+				}
 
 				req := protocol.NewPageMigrationReqToCP(d.gpuPort,
 					d.GPUs[gpuID])
@@ -634,15 +868,25 @@ func (d *Driver) processShootdownCompleteRsp(
 				req.ToReadFromPhysicalAddress = oldPAddr
 				req.ToWriteToPhysicalAddress = page.PAddr
 				req.PageSize = d.currentPageMigrationReq.PageSize
+				req.VirtualAddress = vAddr
+				req.PID = context.pid
 
 				d.migrationReqToSendToCP = append(d.migrationReqToSendToCP, req)
 				d.numPagesMigratingACK++
 			}
 		}
+
+		if d.numPagesMigratingACK == 0 {
+			d.numPagesMigratingACK++
+			d.processPageMigrationRspFromCP(nil)
+		}
+
+		fmt.Printf("\n")
+
 		return true
 	}
 
-	return false
+	return true
 }
 
 func (d *Driver) findRequestingGPUs(
@@ -676,12 +920,13 @@ func (d *Driver) preparePageForMigration(
 	vAddr uint64,
 	context *Context,
 	gpuID uint64,
-) (*vm.Page, uint64) {
+) (*vm.Page, uint64, uint64) {
 	page, found := d.pageTable.Find(context.pid, vAddr)
 	if !found {
 		panic("page not founds")
 	}
 	oldPAddr := page.PAddr
+	oldDeviceID := page.DeviceID
 
 	newPage := d.memAllocator.AllocatePageWithGivenVAddr(
 		context.pid, int(gpuID+1), vAddr, true)
@@ -690,15 +935,82 @@ func (d *Driver) preparePageForMigration(
 	newPage.IsMigrating = true
 	d.pageTable.Update(newPage)
 
-	return &newPage, oldPAddr
+	d.memAllocator.CountMemUsage(oldDeviceID, page.PageSize, true)
+	return &newPage, oldPAddr, oldDeviceID
+}
+
+func (d *Driver) preparePageForDuplication(
+	vAddr uint64,
+	context *Context,
+	gpuID uint64,
+) (*vm.Page, uint64, uint64) {
+	page, found := d.pageTable.Find(context.pid, vAddr)
+	if !found {
+		panic("page not founds")
+	}
+	oldPAddr := page.PAddr
+	oldDeviceID := page.DeviceID
+
+	newPage := d.memAllocator.AllocatePageWithGivenVAddr(
+		context.pid, int(gpuID+1), vAddr, true)
+	newPage.DeviceID = gpuID + 1
+	newPage.IsShared = true
+
+	page.IsShared = true
+	page.SharedPages = append(page.SharedPages, newPage)
+	d.pageTable.Update(page)
+
+	return &page, oldPAddr, oldDeviceID
+}
+
+func (d *Driver) preparePageForInvalidation(
+	vAddr uint64,
+	context *Context,
+	gpuID uint64,
+) (*vm.Page, uint64, uint64) {
+
+	page, found := d.pageTable.Find(context.pid, vAddr)
+	if !found {
+		panic("page not founds")
+	}
+	oldPAddr := page.PAddr
+	oldDeviceID := page.DeviceID
+
+	newPage, f := d.GetSharedPageByDeviceID(page, int(gpuID+1))
+	if !f {
+		newPage = d.memAllocator.AllocatePageWithGivenVAddr(
+			context.pid, int(gpuID+1), vAddr, true)
+		newPage.DeviceID = gpuID + 1
+	}
+
+	newPage.IsShared = false
+	newPage.IsMigrating = true
+	d.pageTable.Update(newPage)
+
+	if newPage.DeviceID != oldDeviceID {
+		d.memAllocator.CountMemUsage(oldDeviceID, page.PageSize, true)
+	}
+	for _, pg := range page.SharedPages {
+		if pg.DeviceID == newPage.DeviceID {
+			continue
+		}
+		d.memAllocator.CountMemUsage(pg.DeviceID, page.PageSize, true)
+	}
+
+	return &newPage, oldPAddr, oldDeviceID
 }
 
 func (d *Driver) sendMigrationReqToCP() bool {
+	d.returnValue[15] = "true"
+	d.returnValue[16] = "true"
+	d.returnValue[17] = "true"
 	if len(d.migrationReqToSendToCP) == 0 {
+		d.returnValue[15] = "false"
 		return false
 	}
 
 	if d.isCurrentlyMigratingOnePage {
+		d.returnValue[16] = "false"
 		return false
 	}
 
@@ -708,9 +1020,13 @@ func (d *Driver) sendMigrationReqToCP() bool {
 	if err == nil {
 		d.migrationReqToSendToCP = d.migrationReqToSendToCP[1:]
 		d.isCurrentlyMigratingOnePage = true
+
+		fmt.Printf("[Driver]\tSend Migration Req(%x -> %x) to %s\n", req.ToReadFromPhysicalAddress, req.ToWriteToPhysicalAddress, req.Dst)
 		return true
 	}
 
+	fmt.Printf("[Driver]\tFailed to Send Migration Req(%x -> %x) to %s", req.ToReadFromPhysicalAddress, req.ToWriteToPhysicalAddress, req.Dst)
+	d.returnValue[17] = "false"
 	return false
 }
 
@@ -721,24 +1037,176 @@ func (d *Driver) processPageMigrationRspFromCP(
 	d.isCurrentlyMigratingOnePage = false
 
 	if d.numPagesMigratingACK == 0 {
+		fmt.Printf("[Driver]\tMigration Complete\n\t\tPrepare PTE Invalidation\n")
+
+		if d.currentPageMigrationReq.ForDuplication {
+			d.RemoveRequestInMMU()
+		} else {
+			d.preparePTEInvalidationReqToCP()
+		}
+	}
+
+	return true
+}
+
+func (d *Driver) preparePTEInvalidationReqToCP() bool {
+	accessingGPUs := d.currentPageMigrationReq.CurrAccessingGPUs
+	requestingGPU := d.currentPageMigrationReq.RequestingDevice
+	VAs := d.currentPageMigrationReq.MigrationInfo.GPUReqToVAddrMap[requestingGPU]
+
+	for _, gpuID := range accessingGPUs {
+		if gpuID == requestingGPU {
+			continue
+		}
+
+		for _, va := range VAs {
+			invReq := vm.PTEInvalidationReqBuilder{}.
+				WithSrc(d.gpuPort.AsRemote()).
+				WithDst(d.GPUs[gpuID-1].AsRemote()).
+				WithVAddr(va).
+				WithPID(d.currentPageMigrationReq.PID).
+				WithPageSize(d.currentPageMigrationReq.PageSize).
+				Build()
+
+			d.invalidationReqToSendToCP = append(d.invalidationReqToSendToCP, invReq)
+			d.numInvalidationACK++
+		}
+	}
+
+	return true
+}
+
+func (d *Driver) sendInvalidationReqToCP() bool {
+	d.returnValue[19] = "true"
+	d.returnValue[20] = "true"
+
+	if len(d.invalidationReqToSendToCP) == 0 {
+		d.returnValue[19] = "false"
+		return false
+	}
+
+	req := d.invalidationReqToSendToCP[0]
+
+	err := d.gpuPort.Send(req)
+	if err == nil {
+		d.invalidationReqToSendToCP = d.invalidationReqToSendToCP[1:]
+		return true
+	}
+
+	d.returnValue[20] = "false"
+	return false
+}
+
+func (d *Driver) processInvalidationRspFromCP(
+	rsp *vm.PTEInvalidationRsp,
+) bool {
+	d.numInvalidationACK--
+
+	if d.numInvalidationACK == 0 {
+		d.RemoveRequestInMMU()
+	}
+
+	return true
+}
+
+func (d *Driver) RemoveRequestInMMU() {
+	req := vm.NewRemoveRequestInMMUFromDriver(
+		d.mmuPort.AsRemote(),
+		d.currentPageMigrationReq.Src,
+	)
+
+	err := d.mmuPort.Send(req)
+	if err != nil {
+		fmt.Printf("[Driver]\t[Warning]\tFailed to send RemoveRequestInMMU request to MMU\n")
+		return
+	}
+}
+
+func (d *Driver) processRemoveRequestRspFromMMU(
+	rsp *vm.RemoveRequestRspFromMMU,
+) bool {
+	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
+		fmt.Printf("[Driver]\tSkip RDMA Restart\n")
+		d.numRDMARestartACK++
+		d.processRDMARestartRspToDriver(nil)
+
+		return true
+	}
+
+	d.prepareRDMARestartReqs()
+
+	return true
+}
+
+func (d *Driver) prepareRDMARestartReqs() {
+	for i := 0; i < len(d.GPUs); i++ {
+		fmt.Printf("[Driver]\tSend RDMA Restart cmd to GPU %d\n", i+1)
+
+		req := protocol.NewRDMARestartCmdFromDriver(d.gpuPort, d.GPUs[i])
+		d.requestsToSend = append(d.requestsToSend, req)
+		d.numRDMARestartACK++
+
+		tracing.AddTaskStep(
+			d.currentPageMigrationReq.Meta().ID,
+			d,
+			fmt.Sprintf("Send RDMA Restart Cmd to GPU %d", i+1),
+		)
+	}
+}
+
+func (d *Driver) processRDMARestartRspToDriver(
+	rsp *protocol.RDMARestartRspToDriver) bool {
+	d.numRDMARestartACK--
+
+	if d.numRDMARestartACK == 0 {
+		fmt.Printf("[Driver]\tComplete RDMA Restart\n\t\t\tSend GPU Restart Req\n")
 		d.prepareGPURestartReqs()
-		d.preparePageMigrationRspToMMU()
 	}
 
 	return true
 }
 
 func (d *Driver) prepareGPURestartReqs() {
-	accessingGPUs := d.currentPageMigrationReq.CurrAccessingGPUs
+	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
+		fmt.Printf("[Driver]\tSkip GPU Restart Because of 1st touch\n")
+		d.numRestartACK++
+		d.handleGPURestartRsp(nil)
 
-	for i := 0; i < len(accessingGPUs); i++ {
-		restartGPUID := accessingGPUs[i] - 1
+		return
+	}
+
+	for i, _ := range d.GPUs {
+		if uint64(i) == 0 {
+			continue
+		}
+
+		restartGPUID := i
 		restartReq := protocol.NewGPURestartReq(
 			d.gpuPort,
 			d.GPUs[restartGPUID])
 		d.requestsToSend = append(d.requestsToSend, restartReq)
 		d.numRestartACK++
 	}
+}
+
+func (d *Driver) handleGPURestartRsp(
+	req *protocol.GPURestartRsp,
+) bool {
+	d.numRestartACK--
+
+	if d.numRestartACK == 0 {
+		d.preparePageMigrationRspToMMU()
+		d.processMigrationCompletion()
+
+		if req != nil {
+			tracing.EndTask(
+				d.shootDownReqID[uint64(req.DeviceID-1)],
+				d,
+			)
+		}
+	}
+
+	return true
 }
 
 func (d *Driver) preparePageMigrationRspToMMU() {
@@ -771,40 +1239,15 @@ func (d *Driver) preparePageMigrationRspToMMU() {
 	d.toSendToMMU = req
 }
 
-func (d *Driver) handleGPURestartRsp(
-	req *protocol.GPURestartRsp,
-) bool {
-	d.numRestartACK--
-	if d.numRestartACK == 0 {
-		d.prepareRDMARestartReqs()
-	}
-	return true
-}
-
-func (d *Driver) prepareRDMARestartReqs() {
-	for i := 0; i < len(d.GPUs); i++ {
-		req := protocol.NewRDMARestartCmdFromDriver(d.gpuPort, d.GPUs[i])
-		d.requestsToSend = append(d.requestsToSend, req)
-		d.numRDMARestartACK++
-	}
-}
-
-func (d *Driver) processRDMARestartRspToDriver(
-	rsp *protocol.RDMARestartRspToDriver) bool {
-	d.numRDMARestartACK--
-
-	if d.numRDMARestartACK == 0 {
-		d.currentPageMigrationReq = nil
-		d.isCurrentlyHandlingMigrationReq = false
-		return true
-	}
-	return true
-}
-
 func (d *Driver) sendToMMU() bool {
+	d.returnValue[22] = "true"
+	d.returnValue[23] = "true"
+
 	if d.toSendToMMU == nil {
+		d.returnValue[22] = "false"
 		return false
 	}
+
 	req := d.toSendToMMU
 	err := d.mmuPort.Send(req)
 	if err == nil {
@@ -812,5 +1255,51 @@ func (d *Driver) sendToMMU() bool {
 		return true
 	}
 
+	d.returnValue[23] = "false"
 	return false
+}
+
+func (d *Driver) processMigrationCompletion() bool {
+	fmt.Printf("[Driver]\tComplete Migration\n")
+
+	tracing.EndTask(d.currentPageMigrationReq.Meta().ID, d)
+
+	memUsg := "[ "
+	// fmt.Printf("[Driver]\tCompleted Page Migration Request for VA %x\n", d.currentPageMigrationReq.MigrationInfo.GPUReqToVAddrMap[d.currentPageMigrationReq.RequestingDevice][0])
+	// fmt.Printf("\t\t\tMemory Usage: [ ")
+	for i := 1; i <= d.GetNumGPUs(); i++ {
+		usage := d.memAllocator.GetMemUsage(uint64(i)) >> d.Log2PageSize
+		// fmt.Printf("%d pages, ", usage)
+		memUsg += fmt.Sprintf("%d ", usage)
+	}
+	// fmt.Printf("]\n\n")
+	memUsg += fmt.Sprintf("]")
+	tracing.StartTask(
+		d.currentPageMigrationReq.Meta().ID+"_MemUsage",
+		"",
+		d,
+		"Memory Usage",
+		memUsg,
+		nil,
+	)
+	tracing.EndTask(d.currentPageMigrationReq.Meta().ID+"_MemUsage", d)
+
+	d.currentPageMigrationReq = nil
+	d.isCurrentlyHandlingMigrationReq = false
+
+	return true
+}
+
+func (d *Driver) GetSharedPageByDeviceID(page vm.Page, deviceID int) (vm.Page, bool) {
+	if page.DeviceID == uint64(deviceID) {
+		return page, true
+	}
+
+	for _, pg := range page.SharedPages {
+		if pg.DeviceID == uint64(deviceID) {
+			return pg, true
+		}
+	}
+
+	return vm.Page{}, false
 }

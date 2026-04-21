@@ -1,9 +1,12 @@
 package driver
 
 import (
+	"fmt"
+
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/sim"
+	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/driver/internal"
 )
 
@@ -12,11 +15,15 @@ type Builder struct {
 	engine              sim.Engine
 	freq                sim.Freq
 	log2PageSize        uint64
-	pageTable           vm.PageTable
+	log2CacheLineSize   uint64
+	pageTable           vm.LevelPageTable
 	globalStorage       *mem.Storage
 	useMagicMemoryCopy  bool
 	middlewareD2HCycles int
 	middlewareH2DCycles int
+
+	visTracer           tracing.Tracer
+	pageMigrationPolicy uint64
 }
 
 // MakeBuilder creates a driver builder with some default configuration
@@ -40,7 +47,7 @@ func (b Builder) WithFreq(freq sim.Freq) Builder {
 }
 
 // WithPageTable sets the global page table.
-func (b Builder) WithPageTable(pt vm.PageTable) Builder {
+func (b Builder) WithPageTable(pt vm.LevelPageTable) Builder {
 	b.pageTable = pt
 	return b
 }
@@ -49,6 +56,12 @@ func (b Builder) WithPageTable(pt vm.PageTable) Builder {
 // as a power of 2.
 func (b Builder) WithLog2PageSize(log2PageSize uint64) Builder {
 	b.log2PageSize = log2PageSize
+	return b
+}
+
+// WithLog2CacheLineSize sets the log2 cache line size.
+func (b Builder) WithLog2CacheLineSize(size uint64) Builder {
+	b.log2CacheLineSize = size
 	return b
 }
 
@@ -74,13 +87,26 @@ func (b Builder) WithH2DCycles(h2dCycles int) Builder {
 	return b
 }
 
+// WithVisTracer enables tracing for visualization on the command processor and
+// the dispatchers.
+func (b Builder) WithVisTracer(tracer tracing.Tracer) Builder {
+	b.visTracer = tracer
+	return b
+}
+
+func (b Builder) WithPageMigrationPolicy(policy uint64) Builder {
+	b.pageMigrationPolicy = policy
+	return b
+}
+
 // Build creates a driver.
 func (b Builder) Build(name string) *Driver {
 	driver := new(Driver)
-	driver.TickingComponent = sim.NewTickingComponent(
+	driver.TickingComponent = *sim.NewTickingComponent(
 		"Driver", b.engine, b.freq, driver)
 
 	driver.Log2PageSize = b.log2PageSize
+	driver.Log2CacheLineSize = b.log2CacheLineSize
 
 	memAllocatorImpl := internal.NewMemoryAllocator(b.pageTable, b.log2PageSize)
 	driver.memAllocator = memAllocatorImpl
@@ -113,6 +139,20 @@ func (b Builder) Build(name string) *Driver {
 
 	driver.enqueueSignal = make(chan bool)
 	driver.driverStopped = make(chan bool)
+
+	if b.visTracer != nil {
+		tracing.CollectTrace(driver, b.visTracer)
+	}
+	driver.DirtyMask = []map[vm.PID]map[uint64][]uint8{}
+	driver.ReadMask = []map[vm.PID]map[uint64][]uint8{}
+	driver.shootDownReqID = make(map[uint64]string)
+	driver.pageMigrationPolicy = b.pageMigrationPolicy
+
+	for i := 0; i < 30; i++ {
+		driver.returnValue = append(driver.returnValue, "")
+	}
+
+	fmt.Printf("[Driver Builder]\tDriver built with PageMigrationPolicy=%d\n", b.pageMigrationPolicy)
 
 	b.createCPU(driver)
 

@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var dataWidth = flag.Int("width", 256, "The dimension of the square matrix.")
+var dataWidth = flag.Int("width", 4096, "The dimension of the square matrix.")
 
 func main() {
 	flag.Parse()

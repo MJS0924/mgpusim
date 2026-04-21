@@ -43,6 +43,7 @@ type Benchmark struct {
 
 	Dim       int32
 	Sparsity  float64
+	RandSeed  int64
 	dValData  driver.Ptr
 	dVecData  driver.Ptr
 	dColsData driver.Ptr
@@ -102,7 +103,7 @@ func (b *Benchmark) initMem() {
 	fmt.Fprintf(os.Stderr, "Number of non-zero elements %d\n", b.nItems)
 
 	b.matrix = csr.
-		MakeMatrixGenerator(uint32(b.Dim), uint32(b.nItems)).
+		MakeMatrixGenerator(uint32(b.Dim), uint32(b.nItems), b.RandSeed).
 		GenerateMatrix()
 	b.vec = make([]float32, b.Dim)
 	b.out = make([]float32, b.Dim)

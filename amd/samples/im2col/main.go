@@ -9,8 +9,8 @@ import (
 
 var n = flag.Int("N", 1, "batch size")
 var c = flag.Int("C", 1, "input channels")
-var h = flag.Int("H", 28, "input height")
-var w = flag.Int("W", 28, "input width")
+var h = flag.Int("H", 128, "input height")
+var w = flag.Int("W", 128, "input width")
 var kernelHeight = flag.Int("kernel-height", 3, "kernel height")
 var kernelWidth = flag.Int("kernel-width", 3, "kernel width")
 var padX = flag.Int("pad-x", 0, "padding height")

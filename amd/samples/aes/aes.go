@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var lenInput = flag.Int("length", 65536, "The length of array to sort.")
+var lenInput = flag.Int("length", 1<<20, "The length of array to sort.")
 
 func main() {
 	flag.Parse()

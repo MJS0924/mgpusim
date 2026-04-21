@@ -1,6 +1,7 @@
 package cp
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
@@ -257,8 +258,10 @@ func (dma *DMAEngine) parseFromCP() bool {
 	dma.processingReqs = append(dma.processingReqs, rqC)
 	switch req := req.(type) {
 	case *protocol.MemCopyH2DReq:
+		fmt.Printf("[%s]\tReceived MemCopyH2DReq\n", dma.Name())
 		dma.parseMemCopyH2D(req, rqC)
 	case *protocol.MemCopyD2HReq:
+		fmt.Printf("[%s]\tReceived MemCopyH2DReq\n", dma.Name())
 		dma.parseMemCopyD2H(req, rqC)
 	default:
 		log.Panicf("cannot process request of type %s", reflect.TypeOf(req))
@@ -340,6 +343,10 @@ func (dma *DMAEngine) parseMemCopyD2H(
 		addr += length
 		lengthLeft -= length
 		offset += length
+
+		if lengthLeft == 0 {
+			fmt.Printf("[%s]\tComplete to send read request to bottom(%s)\n", dma.Name(), reqToBottom.Dst)
+		}
 	}
 }
 

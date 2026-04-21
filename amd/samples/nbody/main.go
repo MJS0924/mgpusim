@@ -7,8 +7,8 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var numIter = flag.Int("iter", 8, "The number of iterations to run.")
-var particles = flag.Int("particles", 1024, "The number of particles in the body.")
+var numIter = flag.Int("iter", 64, "The number of iterations to run.")
+var particles = flag.Int("particles", 131072, "The number of particles in the body.")
 
 func main() {
 	flag.Parse()

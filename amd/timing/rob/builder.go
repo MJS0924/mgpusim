@@ -52,6 +52,7 @@ func (b Builder) WithBufferSize(n int) Builder {
 func (b Builder) Build(name string) *ReorderBuffer {
 	rb := &ReorderBuffer{}
 
+	rb.name = name
 	rb.TickingComponent = sim.NewTickingComponent(name, b.engine, b.freq, rb)
 
 	rb.transactions = list.New()

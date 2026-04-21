@@ -7,8 +7,8 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var xFlag = flag.Int("x", 4096, "The width of the matrix.")
-var yFlag = flag.Int("y", 4096, "The height of the matrix.")
+var xFlag = flag.Int("x", 8192, "The width of the matrix.")
+var yFlag = flag.Int("y", 8192, "The height of the matrix.")
 
 func main() {
 	flag.Parse()

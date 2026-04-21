@@ -1,12 +1,15 @@
 package pagemigrationcontroller
 
 import (
+	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/sim"
 )
 
 // A PageMigrationReqToPMC asks the local GPU PMC to transfer a given page from another GPU PMC
 type PageMigrationReqToPMC struct {
 	sim.MsgMeta
+	VitrualAddress            uint64
+	PID                       vm.PID
 	ToReadFromPhysicalAddress uint64
 	ToWriteToPhysicalAddress  uint64
 	PMCPortOfRemoteGPU        sim.RemotePort
@@ -29,6 +32,8 @@ func (r *PageMigrationReqToPMC) Clone() sim.Msg {
 // PageMigrationReqToPMCBuilder can build new PMC mgiration requests
 type PageMigrationReqToPMCBuilder struct {
 	src, dst             sim.RemotePort
+	VitrualAddress       uint64
+	PID                  vm.PID
 	ToReadFromPhyAddress uint64
 	ToWriteToPhyAddress  uint64
 	PMCPortOfRemoteGPU   sim.RemotePort
@@ -44,6 +49,18 @@ func (b PageMigrationReqToPMCBuilder) WithSrc(src sim.RemotePort) PageMigrationR
 // WithDst sets the destination of the request to build.
 func (b PageMigrationReqToPMCBuilder) WithDst(dst sim.RemotePort) PageMigrationReqToPMCBuilder {
 	b.dst = dst
+	return b
+}
+
+// WithReadFrom sets the read address of the request to build.
+func (b PageMigrationReqToPMCBuilder) WithVAddr(VAddr uint64) PageMigrationReqToPMCBuilder {
+	b.VitrualAddress = VAddr
+	return b
+}
+
+// WithReadFrom sets the read address of the request to build.
+func (b PageMigrationReqToPMCBuilder) WithPID(PID vm.PID) PageMigrationReqToPMCBuilder {
+	b.PID = PID
 	return b
 }
 
@@ -134,6 +151,9 @@ func (b PageMigrationRspFromPMCBuilder) Build() *PageMigrationRspFromPMC {
 // A DataPullReq asks remote PMC that holds the page for a page
 type DataPullReq struct {
 	sim.MsgMeta
+	VitrualAddress       uint64
+	PID                  vm.PID
+	PTEInvalidation      bool
 	ToReadFromPhyAddress uint64
 	DataTransferSize     uint64
 }
@@ -154,6 +174,9 @@ func (r *DataPullReq) Clone() sim.Msg {
 // DataPullReqBuilder can build new Data pull reqs
 type DataPullReqBuilder struct {
 	src, dst             sim.RemotePort
+	VitrualAddress       uint64
+	PID                  vm.PID
+	PTEInvalidation      bool
 	ToReadFromPhyAddress uint64
 	DataTransferSize     uint64
 }
@@ -167,6 +190,24 @@ func (b DataPullReqBuilder) WithSrc(src sim.RemotePort) DataPullReqBuilder {
 // WithDst sets the destination of the request to build.
 func (b DataPullReqBuilder) WithDst(dst sim.RemotePort) DataPullReqBuilder {
 	b.dst = dst
+	return b
+}
+
+// WithDst sets the destination of the request to build.
+func (b DataPullReqBuilder) WithVAddr(VAddr uint64) DataPullReqBuilder {
+	b.VitrualAddress = VAddr
+	return b
+}
+
+// WithDst sets the destination of the request to build.
+func (b DataPullReqBuilder) WithPID(PID vm.PID) DataPullReqBuilder {
+	b.PID = PID
+	return b
+}
+
+// WithDst sets the destination of the request to build.
+func (b DataPullReqBuilder) WithPTEInvalidation(PTEInv bool) DataPullReqBuilder {
+	b.PTEInvalidation = PTEInv
 	return b
 }
 
@@ -186,6 +227,9 @@ func (b DataPullReqBuilder) WithDataTransferSize(dataTransferSize uint64) DataPu
 func (b DataPullReqBuilder) Build() *DataPullReq {
 	r := &DataPullReq{}
 	r.ID = sim.GetIDGenerator().Generate()
+	r.VitrualAddress = b.VitrualAddress
+	r.PID = b.PID
+	r.PTEInvalidation = b.PTEInvalidation
 	r.Src = b.src
 	r.Dst = b.dst
 	r.ToReadFromPhyAddress = b.ToReadFromPhyAddress

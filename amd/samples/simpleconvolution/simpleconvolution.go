@@ -7,9 +7,9 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var widthFlag = flag.Uint("width", 254, "The width of the input matrix.")
-var heightFlag = flag.Uint("height", 254, "The height of the input matrix.")
-var maskSizeFlag = flag.Uint("mask-size", 3, "The size of the mask.")
+var widthFlag = flag.Uint("width", 2000, "The width of the input matrix.")
+var heightFlag = flag.Uint("height", 2000, "The height of the input matrix.")
+var maskSizeFlag = flag.Uint("mask-size", 24, "The size of the mask.")
 
 func main() {
 	flag.Parse()

@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var length = flag.Int("length", 1024, "The length of array to sort.")
+var length = flag.Int("length", 4000, "The length of array to sort.")
 var orderAscending = flag.Bool("order-asc", true, "Sorting in ascending order.")
 
 func main() {

@@ -433,7 +433,7 @@ func BuildComputeUnit(
 	name string,
 	engine sim.Engine,
 	decoder Decoder,
-	pageTable vm.PageTable,
+	pageTable vm.LevelPageTable,
 	log2PageSize uint64,
 	storage *mem.Storage,
 	addrConverter mem.AddressConverter,

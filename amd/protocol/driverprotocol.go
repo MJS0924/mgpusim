@@ -10,6 +10,8 @@ import (
 // FlushReq requests the GPU to flush all the cache to the main memory
 type FlushReq struct {
 	sim.MsgMeta
+	Cache  bool
+	CohDir bool
 }
 
 // Meta returns the meta data associated with the message.
@@ -189,8 +191,11 @@ type ShootDownCommand struct {
 	StartTime sim.VTimeInSec
 	EndTime   sim.VTimeInSec
 
-	VAddr []uint64
-	PID   vm.PID
+	VAddr           []uint64
+	PID             vm.PID
+	ForDuplication  bool
+	ForInvalidation bool
+	ToAccessingGPU  bool // accessing GPU가 아닌 경우, TLB, L1cache shootdown invalidation은 필요없음
 }
 
 // Meta returns the meta data associated with the message.
@@ -387,6 +392,7 @@ type GPURestartRsp struct {
 
 	StartTime sim.VTimeInSec
 	EndTime   sim.VTimeInSec
+	DeviceID  uint32
 }
 
 // Meta returns the meta data associated with the message.
@@ -404,12 +410,13 @@ func (m *GPURestartRsp) Clone() sim.Msg {
 
 // NewGPURestartRsp creates a GPURestart respond
 func NewGPURestartRsp(
-	src, dst sim.Port,
+	src, dst sim.Port, deviceID uint32,
 ) *GPURestartRsp {
 	cmd := new(GPURestartRsp)
 	cmd.ID = sim.GetIDGenerator().Generate()
 	cmd.Src = src.AsRemote()
 	cmd.Dst = dst.AsRemote()
+	cmd.DeviceID = deviceID
 	return cmd
 }
 
@@ -420,10 +427,12 @@ type PageMigrationReqToCP struct {
 	StartTime sim.VTimeInSec
 	EndTime   sim.VTimeInSec
 
+	VirtualAddress            uint64
 	ToReadFromPhysicalAddress uint64
 	ToWriteToPhysicalAddress  uint64
 	DestinationPMCPort        sim.Port
 	PageSize                  uint64
+	PID                       vm.PID
 }
 
 // Meta returns the meta data associated with the message.

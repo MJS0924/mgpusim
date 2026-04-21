@@ -7,11 +7,11 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var points = flag.Int("points", 1024, "The number of points.")
-var clusters = flag.Int("clusters", 5, "The number of clusters.")
+var points = flag.Int("points", 524288, "The number of points.")
+var clusters = flag.Int("clusters", 20, "The number of clusters.")
 var features = flag.Int("features", 32,
 	"The number of features for each point.")
-var maxIter = flag.Int("max-iter", 5,
+var maxIter = flag.Int("max-iter", 1,
 	"The maximum number of iterations to run")
 
 func main() {

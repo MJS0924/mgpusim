@@ -27,7 +27,7 @@ type Builder struct {
 	gpuName          string
 	gpu              *sim.Domain
 	engine           sim.Engine
-	pageTable        vm.PageTable
+	pageTable        vm.LevelPageTable
 	gpuMem           *idealmemcontroller.Comp
 	computeUnits     []*emu.ComputeUnit
 	commandProcessor *cp.CommandProcessor
@@ -62,7 +62,7 @@ func (b Builder) WithDriver(d *driver.Driver) Builder {
 }
 
 // WithPageTable sets the page table that provides the address translation
-func (b Builder) WithPageTable(pageTable vm.PageTable) Builder {
+func (b Builder) WithPageTable(pageTable vm.LevelPageTable) Builder {
 	b.pageTable = pageTable
 	return b
 }

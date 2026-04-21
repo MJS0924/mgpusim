@@ -40,6 +40,7 @@ type Benchmark struct {
 	NumNodes       uint32
 	NumConnections uint32
 	MaxIterations  uint32
+	RandSeed       int64
 
 	hMatrix         csr.Matrix
 	hPageRank       []float32
@@ -101,7 +102,7 @@ func (b *Benchmark) initMem() {
 	b.hPageRank = make([]float32, b.NumNodes)
 	b.verPageRank = make([]float32, b.NumNodes)
 	b.verPageRankTemp = make([]float32, b.NumNodes)
-	b.hMatrix = csr.MakeMatrixGenerator(b.NumNodes, b.NumConnections).
+	b.hMatrix = csr.MakeMatrixGenerator(b.NumNodes, b.NumConnections, b.RandSeed).
 		GenerateMatrix()
 
 	for i := uint32(0); i < b.NumNodes; i++ {

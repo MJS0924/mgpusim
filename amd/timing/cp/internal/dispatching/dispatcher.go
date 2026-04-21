@@ -20,6 +20,8 @@ type Dispatcher interface {
 	RegisterCU(cu resource.DispatchableCU)
 	IsDispatching() bool
 	StartDispatching(req *protocol.LaunchKernelReq)
+	Pause()
+	Resume()
 	Tick() (madeProgress bool)
 }
 
@@ -44,6 +46,8 @@ type DispatcherImpl struct {
 
 	monitor     *monitoring.Monitor
 	progressBar *monitoring.ProgressBar
+
+	pause bool
 }
 
 // Name returns the name of the dispatcher
@@ -79,6 +83,14 @@ func (d *DispatcherImpl) StartDispatching(req *protocol.LaunchKernelReq) {
 	d.initializeProgressBar(req.ID)
 }
 
+func (d *DispatcherImpl) Pause() {
+	d.pause = true
+}
+
+func (d *DispatcherImpl) Resume() {
+	d.pause = false
+}
+
 func (d *DispatcherImpl) initializeProgressBar(kernelID string) {
 	if d.monitor != nil {
 		d.progressBar = d.monitor.CreateProgressBar(
@@ -101,10 +113,11 @@ func (d *DispatcherImpl) Tick() (madeProgress bool) {
 		return true
 	}
 
+	// if d.dispatching != nil {
 	if d.dispatching != nil {
 		if d.kernelCompleted() {
 			madeProgress = d.completeKernel() || madeProgress
-		} else {
+		} else if !d.pause {
 			madeProgress = d.dispatchNextWG() || madeProgress
 		}
 	}
@@ -195,6 +208,7 @@ func (d *DispatcherImpl) completeKernel() (
 	req := d.dispatching
 
 	rsp := protocol.NewLaunchKernelRsp(req.Dst, req.Src, req.ID)
+	fmt.Printf("[%s]\tKernel Complete\n", d.cp.Name())
 
 	err := d.respondingPort.Send(rsp)
 	if err == nil {

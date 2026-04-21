@@ -26,6 +26,8 @@ var (
 	outputDirFlag    = flag.String("output-dir", "results/m1/raw", "Output directory for parquet files")
 	configIDFlag     = flag.Uint("config-id", 0, "Config ID embedded in snapshot rows")
 	workloadIDFlag   = flag.Uint("workload-id", 0, "Workload ID embedded in snapshot rows")
+	enableEventLogFlag = flag.Bool("enable-event-log", false, "Record promotion/demotion events to parquet (default: off)")
+	eventLogPathFlag   = flag.String("event-log-path", "events.parquet", "Output path for the event log parquet file")
 )
 
 func main() {
@@ -33,13 +35,15 @@ func main() {
 	rand.Seed(*seedFlag)
 
 	cfg := &m1Config{
-		workload:     *workloadFlag,
-		regionSize:   *regionSizeFlag,
-		seed:         *seedFlag,
-		windowCycles: *windowCyclesFlag,
-		outputDir:    *outputDirFlag,
-		configID:     uint16(*configIDFlag),
-		workloadID:   uint16(*workloadIDFlag),
+		workload:       *workloadFlag,
+		regionSize:     *regionSizeFlag,
+		seed:           *seedFlag,
+		windowCycles:   *windowCyclesFlag,
+		outputDir:      *outputDirFlag,
+		configID:       uint16(*configIDFlag),
+		workloadID:     uint16(*workloadIDFlag),
+		enableEventLog: *enableEventLogFlag,
+		eventLogPath:   *eventLogPathFlag,
 	}
 
 	log.Printf("[m1] starting: workload=%s regionSize=%d seed=%d windowCycles=%d",

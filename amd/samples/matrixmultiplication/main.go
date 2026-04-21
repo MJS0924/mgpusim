@@ -9,9 +9,9 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var xFlag = flag.Uint("x", 64, "The height of the first matrix.")
-var yFlag = flag.Uint("y", 64, "The width of the first matrix and the height of the second matrix.")
-var zFlag = flag.Uint("z", 64, "The width of the second matrix.")
+var xFlag = flag.Uint("x", 2048, "The height of the first matrix.")
+var yFlag = flag.Uint("y", 2048, "The width of the first matrix and the height of the second matrix.")
+var zFlag = flag.Uint("z", 2048, "The width of the second matrix.")
 
 func main() {
 	flag.Parse()

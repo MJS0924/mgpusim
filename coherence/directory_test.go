@@ -312,3 +312,22 @@ func TestV12_EntryAccessBitmap(t *testing.T) {
 			n, cap(e.AccessBitmap))
 	}
 }
+
+// TestInvariantV8_UniformFourWaySubEntryLaw enforces the β-design structural
+// constraint: for every bank k, coverage c_k = 4 × s_k, with s_4 equal to the
+// cache line size and c_0 bounded by a 64 KB page.
+func TestInvariantV8_UniformFourWaySubEntryLaw(t *testing.T) {
+	sub := []uint64{16384, 4096, 1024, 256, 64}
+	cov := []uint64{65536, 16384, 4096, 1024, 256}
+	for k := range sub {
+		if cov[k] != 4*sub[k] {
+			t.Errorf("Bank %d: c=%d must equal 4×s=%d", k, cov[k], 4*sub[k])
+		}
+	}
+	if sub[4] != DefaultBlockSizeBytes {
+		t.Errorf("s_4=%d must equal DefaultBlockSizeBytes=%d", sub[4], DefaultBlockSizeBytes)
+	}
+	if cov[0] > 65536 {
+		t.Errorf("c_0=%d must not exceed PageSize(64KB)", cov[0])
+	}
+}

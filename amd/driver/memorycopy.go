@@ -3,7 +3,9 @@ package driver
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 
+	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/mgpusim/v4/amd/protocol"
 )
@@ -18,6 +20,14 @@ type defaultMemoryCopyMiddleware struct {
 	cyclesLeft   int
 
 	awaitingReqs []sim.Msg
+
+	processingH2DCmd *MemCopyH2DCommand
+	processingD2HCmd *MemCopyD2HCommand
+	CmdQueue         *CommandQueue
+	CmdQueuePID      vm.PID
+
+	CohDirACK int
+	CacheACK  int
 }
 
 func (m *defaultMemoryCopyMiddleware) ProcessCommand(
@@ -26,20 +36,32 @@ func (m *defaultMemoryCopyMiddleware) ProcessCommand(
 ) (processed bool) {
 	switch cmd := cmd.(type) {
 	case *MemCopyH2DCommand:
-		return m.processMemCopyH2DCommand(cmd, queue)
+		return m.processMemCopyH2DCommand_1(cmd, queue)
 	case *MemCopyD2HCommand:
-		return m.processMemCopyD2HCommand(cmd, queue)
+		return m.processMemCopyD2HCommand_1(cmd, queue)
 	}
 
 	return false
 }
 
-func (m *defaultMemoryCopyMiddleware) processMemCopyH2DCommand(
+func (m *defaultMemoryCopyMiddleware) processMemCopyH2DCommand_1(
 	cmd *MemCopyH2DCommand,
 	queue *CommandQueue,
 ) bool {
+	fmt.Printf("[Driver] Processing MemCopyH2DCommand\n")
+
 	if m.needFlushing(queue.Context, cmd.Dst, uint64(binary.Size(cmd.Src))) {
-		m.sendFlushRequest(cmd)
+		m.processingH2DCmd = cmd
+		m.processingD2HCmd = nil
+		m.CmdQueue = queue
+		m.CmdQueuePID = queue.Context.pid
+		// queue.Dequeue()
+		queue.IsRunning = true
+
+		m.sendCohDirFlushRequest(cmd)
+		queue.Context.removeFreedBuffers()
+
+		return true
 	}
 
 	buffer := bytes.NewBuffer(nil)
@@ -88,14 +110,80 @@ func (m *defaultMemoryCopyMiddleware) processMemCopyH2DCommand(
 	return true
 }
 
-func (m *defaultMemoryCopyMiddleware) processMemCopyD2HCommand(
+func (m *defaultMemoryCopyMiddleware) processMemCopyH2DCommand_2(
+	cmd *MemCopyH2DCommand,
+	queue *CommandQueue,
+) bool {
+	fmt.Printf("[Driver] Processing MemCopyH2DCommand after Dir/Cache flush\n")
+
+	buffer := bytes.NewBuffer(nil)
+	err := binary.Write(buffer, binary.LittleEndian, cmd.Src)
+	if err != nil {
+		panic(err)
+	}
+	rawBytes := buffer.Bytes()
+
+	offset := uint64(0)
+	addr := uint64(cmd.Dst)
+	sizeLeft := uint64(len(rawBytes))
+	for sizeLeft > 0 {
+		page, found := m.driver.pageTable.Find(m.CmdQueuePID, addr)
+		if !found {
+			panic("page not found")
+		}
+
+		pAddr := page.PAddr + (addr - page.VAddr)
+		sizeLeftInPage := page.PageSize - (addr - page.VAddr)
+		sizeToCopy := sizeLeftInPage
+		if sizeLeft < sizeLeftInPage {
+			sizeToCopy = sizeLeft
+		}
+
+		gpuID := m.driver.memAllocator.GetDeviceIDByPAddr(pAddr)
+		req := protocol.NewMemCopyH2DReq(
+			m.driver.gpuPort, m.driver.GPUs[gpuID-1],
+			rawBytes[offset:offset+sizeToCopy],
+			pAddr)
+		cmd.Reqs = append(cmd.Reqs, req)
+		m.awaitingReqs = append(m.awaitingReqs, req)
+		// m.driver.requestsToSend = append(m.driver.requestsToSend, req)
+
+		sizeLeft -= sizeToCopy
+		addr += sizeToCopy
+		offset += sizeToCopy
+
+		m.driver.logTaskToGPUInitiate(cmd, req)
+	}
+
+	m.cyclesLeft = m.cyclesPerH2D
+
+	queue.IsRunning = true
+
+	return true
+}
+
+func (m *defaultMemoryCopyMiddleware) processMemCopyD2HCommand_1(
 	cmd *MemCopyD2HCommand,
 	queue *CommandQueue,
 ) bool {
+	fmt.Printf("[Driver] Processing MemCopyD2HCommand\n")
+
 	if m.needFlushing(queue.Context, cmd.Src, uint64(binary.Size(cmd.Dst))) {
-		m.sendFlushRequest(cmd)
+		m.processingD2HCmd = cmd
+		m.processingH2DCmd = nil
+		m.CmdQueue = queue
+		m.CmdQueuePID = queue.Context.pid
+		// queue.Dequeue()
+		queue.IsRunning = true
+
+		m.sendCohDirFlushRequest(cmd)
 		queue.Context.removeFreedBuffers()
+
+		return true
 	}
+
+	m.processingD2HCmd = cmd
+	m.CmdQueue = queue
 
 	cmd.RawData = make([]byte, binary.Size(cmd.Dst))
 
@@ -104,6 +192,51 @@ func (m *defaultMemoryCopyMiddleware) processMemCopyD2HCommand(
 	sizeLeft := uint64(len(cmd.RawData))
 	for sizeLeft > 0 {
 		page, found := m.driver.pageTable.Find(queue.Context.pid, addr)
+		if !found {
+			panic("page not found")
+		}
+
+		pAddr := page.PAddr + (addr - page.VAddr)
+		sizeLeftInPage := page.PageSize - (addr - page.VAddr)
+		sizeToCopy := sizeLeftInPage
+		if sizeLeft < sizeLeftInPage {
+			sizeToCopy = sizeLeft
+		}
+
+		gpuID := m.driver.memAllocator.GetDeviceIDByPAddr(pAddr)
+		req := protocol.NewMemCopyD2HReq(
+			m.driver.gpuPort, m.driver.GPUs[gpuID-1],
+			pAddr, cmd.RawData[offset:offset+sizeToCopy])
+		cmd.Reqs = append(cmd.Reqs, req)
+		m.awaitingReqs = append(m.awaitingReqs, req)
+		// m.driver.requestsToSend = append(m.driver.requestsToSend, req)
+
+		sizeLeft -= sizeToCopy
+		addr += sizeToCopy
+		offset += sizeToCopy
+
+		m.driver.logTaskToGPUInitiate(cmd, req)
+	}
+
+	m.cyclesLeft = m.cyclesPerD2H
+
+	queue.IsRunning = true
+	return true
+}
+
+func (m *defaultMemoryCopyMiddleware) processMemCopyD2HCommand_2(
+	cmd *MemCopyD2HCommand,
+	queue *CommandQueue,
+) bool {
+	fmt.Printf("[Driver] Processing MemCopyD2HCommand after Dir/Cache flush\n")
+
+	cmd.RawData = make([]byte, binary.Size(cmd.Dst))
+
+	offset := uint64(0)
+	addr := uint64(cmd.Src)
+	sizeLeft := uint64(len(cmd.RawData))
+	for sizeLeft > 0 {
+		page, found := m.driver.pageTable.Find(m.CmdQueuePID, addr)
 		if !found {
 			panic("page not found")
 		}
@@ -170,16 +303,37 @@ func memRangeOverlap(
 	return false
 }
 
-func (m *defaultMemoryCopyMiddleware) sendFlushRequest(
+func (m *defaultMemoryCopyMiddleware) sendCacheFlushRequest(
 	cmd Command,
-) {
+) bool {
 	for _, gpu := range m.driver.GPUs {
 		req := protocol.NewFlushReq(m.driver.gpuPort, gpu)
+		req.Cache = true
 		m.driver.requestsToSend = append(m.driver.requestsToSend, req)
 		cmd.AddReq(req)
 
 		m.driver.logTaskToGPUInitiate(cmd, req)
+		m.CacheACK++
 	}
+
+	return true
+}
+
+func (m *defaultMemoryCopyMiddleware) sendCohDirFlushRequest(
+	cmd Command,
+) bool {
+	fmt.Printf("[Driver] Sending CohDir flush for command\n")
+	for _, gpu := range m.driver.GPUs {
+		req := protocol.NewFlushReq(m.driver.gpuPort, gpu)
+		req.CohDir = true
+		m.driver.requestsToSend = append(m.driver.requestsToSend, req)
+		cmd.AddReq(req)
+
+		m.driver.logTaskToGPUInitiate(cmd, req)
+		m.CohDirACK++
+	}
+
+	return true
 }
 
 func (m *defaultMemoryCopyMiddleware) Tick() (madeProgress bool) {
@@ -193,6 +347,8 @@ func (m *defaultMemoryCopyMiddleware) Tick() (madeProgress bool) {
 		m.awaitingReqs = nil
 		m.cyclesLeft = -1
 		madeProgress = true
+
+		fmt.Printf("[Driver.MemCpy]\tAppend awaitingReqs to requestsToSend\n")
 	}
 
 	req := m.driver.gpuPort.PeekIncoming()
@@ -216,7 +372,33 @@ func (m *defaultMemoryCopyMiddleware) processGeneralRsp(
 
 	switch originalReq := originalReq.(type) {
 	case *protocol.FlushReq:
-		madeProgress = m.processFlushReturn(originalReq)
+		if originalReq.Cache {
+			madeProgress = m.processFlushReturn(originalReq)
+			m.CacheACK--
+
+			if m.CacheACK == 0 {
+				fmt.Printf("[Driver]\tComplete Cache Flush\n")
+
+				if m.processingH2DCmd != nil {
+					madeProgress = m.processMemCopyH2DCommand_2(m.processingH2DCmd, m.CmdQueue)
+				} else {
+					madeProgress = m.processMemCopyD2HCommand_2(m.processingD2HCmd, m.CmdQueue)
+				}
+			}
+		} else {
+			madeProgress = m.processFlushReturn(originalReq) || madeProgress
+			m.CohDirACK--
+
+			if m.CohDirACK == 0 {
+				fmt.Printf("[Driver]\tComplete Coh Dir Flush\n\t\tSend Cache Flush Request\n")
+
+				if m.processingH2DCmd != nil {
+					madeProgress = m.sendCacheFlushRequest(m.processingH2DCmd)
+				} else {
+					madeProgress = m.sendCacheFlushRequest(m.processingD2HCmd)
+				}
+			}
+		}
 	case *protocol.MemCopyH2DReq:
 		madeProgress = m.processMemCopyH2DReturn(originalReq)
 	case *protocol.MemCopyD2HReq:

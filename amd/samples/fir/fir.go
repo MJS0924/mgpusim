@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var numData = flag.Int("length", 4096, "The number of samples to filter.")
+var numData = flag.Int("length", 655360, "The number of samples to filter.")
 
 func main() {
 	flag.Parse()

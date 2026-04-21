@@ -9,9 +9,10 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 )
 
-var numNode = flag.Int("node", 16, "The number of nodes")
-var sparsity = flag.Float64("sparsity", 0.001, "The sparsity of the graph")
+var numNode = flag.Int("node", 32768, "The number of nodes")
+var sparsity = flag.Float64("sparsity", 0.2, "The sparsity of the graph")
 var maxIterations = flag.Int("iterations", 16, "The number of iterations")
+var randSeed = flag.Int64("rand-seed", 42, "Random seed for graph generation (use same seed across REC/HMG/SuperDirectory for fair comparison)")
 
 func main() {
 	flag.Parse()
@@ -33,6 +34,7 @@ func main() {
 
 	benchmark.NumConnections = uint32(numConn)
 	benchmark.MaxIterations = uint32(*maxIterations)
+	benchmark.RandSeed = *randSeed
 
 	runner.AddBenchmark(benchmark)
 
