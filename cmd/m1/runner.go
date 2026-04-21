@@ -29,6 +29,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/benchmarks/shoc/stencil2d"
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
+	"github.com/sarchlab/mgpusim/v4/coherence"
 	"github.com/sarchlab/mgpusim/v4/instrument"
 	"github.com/sarchlab/mgpusim/v4/instrument/adapter"
 )
@@ -101,6 +102,20 @@ func runM1(cfg *m1Config) error {
 		return fmt.Errorf("create sink: %w", err)
 	}
 
+	// Shadow directory: drives the PlainVIDirectory from CU access events so
+	// that finite-capacity LRU evictions are observable in PhaseMetrics.
+	// Only created in finite-capacity mode; nil in infinite mode.
+	var shadowDir *coherence.PlainVIDirectory
+	if dirCfg.IsForFiniteMode() {
+		sd, err := coherence.NewPlainVIDirectory(dirCfg)
+		if err != nil {
+			return fmt.Errorf("create shadow directory: %w", err)
+		}
+		dirAdpt := adapter.NewDirectoryAdapter(m)
+		sd.AddCallback(dirAdpt.SharerEventCallback())
+		shadowDir = sd
+	}
+
 	var l2Adapters []*adapter.L2Adapter
 	var cuAdapters []*adapter.CUAdapter
 	l2Count, cuCount := 0, 0
@@ -117,6 +132,11 @@ func runM1(cfg *m1Config) error {
 			a := adapter.NewCUAdapter(m, dirCfg)
 			cuComp.AcceptHook(a)
 			cuAdapters = append(cuAdapters, a)
+			if shadowDir != nil {
+				// SharerSet is a 32-bit bitmap (MaxBitmapGPUID=31); fold CU index.
+				gpuID := coherence.GPUID(cuCount % 32)
+				cuComp.AcceptHook(adapter.NewShadowDirHook(shadowDir, gpuID))
+			}
 			cuCount++
 		}
 	}
