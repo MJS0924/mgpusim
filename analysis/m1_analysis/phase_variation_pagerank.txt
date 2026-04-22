@@ -1,0 +1,42 @@
+=== Phase Variation Analysis: pagerank ===
+Total events    : 54,814
+Promotions      : 54,761
+N phases        : 10
+
+=== Per-phase stats (equal-count, promotions only) ===
+ Phase   Events  DomToBank    B0%    B1%    B2%    B3%   AvgSC
+     0     5,477           3    0.0    0.5    8.9   90.5    0.0     1.06
+     1     5,476           3    0.0    0.6   10.0   89.3    0.0     1.00
+     2     5,476           3    0.3    1.8   13.4   84.5    0.0     1.00
+     3     5,476           3    0.3    2.1   17.3   80.2    0.0     1.00
+     4     5,476           3    0.9    6.9   25.9   66.3    0.0     1.00
+     5     5,476           3    2.5    8.7   23.8   65.0    0.0     1.00
+     6     5,476           3    0.7    2.9   16.3   80.0    0.0     1.00
+     7     5,476           3    0.9    4.9   22.8   71.5    0.0     1.00
+     8     5,476           3    1.7    7.2   22.4   68.8    0.0     1.00
+     9     5,476           3    3.0    9.3   25.4   62.4    0.0     1.00
+
+=== Phase Variation Summary ===
+  Unique dominant ToBank across phases : 1
+  Dominant banks seen                  : [3]
+  Phase variation (>= 2 dom banks)     : NO
+
+=== KL Divergence between adjacent phases ===
+  Phase 0→1: 0.0009
+  Phase 1→2: 0.0132
+  Phase 2→3: 0.0062
+  Phase 3→4: 0.0552
+  Phase 4→5: 0.0094
+  Phase 5→6: 0.0816
+  Phase 6→7: 0.0195
+  Phase 7→8: 0.0074
+  Phase 8→9: 0.0107
+  Mean KL     : 0.0227
+  Max KL      : 0.0816
+
+[figure] analysis/m1/figures/phase_bank_timeline_pagerank.png
+[figure] analysis/m1/figures/phase_dominant_bank_pagerank.png
+
+=== M1 Exit Criteria Judgment (pagerank) ===
+  FAIL: only 1 dominant bank(s) — no variation.
+  → No phase-level variation detected for pagerank.

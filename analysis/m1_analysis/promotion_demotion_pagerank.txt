@@ -1,0 +1,51 @@
+=== Promotion/Demotion Analysis: pagerank ===
+Total events    : 54,814
+Promotions      : 54,761  (99.9%)
+Demotions       : 53  (0.1%)
+Prom/Dem ratio  : 1033.2x
+
+=== Promotion: FromBank → ToBank transition matrix ===
+to_bank      0     1      2      3
+from_bank                         
+1          564     0      0      0
+2            0  2456      0      0
+3            0     0  10204      0
+4            0     0      0  41537
+
+=== Demotion: FromBank → ToBank transition matrix ===
+to_bank    1  2   3   4
+from_bank              
+0          1  0   0   0
+1          0  4   0   0
+2          0  0  12   0
+3          0  0   0  36
+
+=== Promotion: FromBank frequency ===
+  Bank 1:      564  (1.0%)
+  Bank 2:    2,456  (4.5%)
+  Bank 3:   10,204  (18.6%)
+  Bank 4:   41,537  (75.9%)
+
+=== Promotion: ToBank frequency ===
+  Bank 0:      564  (1.0%)
+  Bank 1:    2,456  (4.5%)
+  Bank 2:   10,204  (18.6%)
+  Bank 3:   41,537  (75.9%)
+
+=== Promotion: SharerCount distribution ===
+  SharerCount=1:   54,445  (99.4%)
+  SharerCount=2:      275  (0.5%)
+  SharerCount=3:       41  (0.1%)
+
+  Multi-GPU shared (sharer>=2): 0.6%
+  Private         (sharer==1): 99.4%
+
+=== Promotion: Utilization stats ===
+  mean=1.000  median=1.000  min=1.000  max=1.000
+
+=== Demotion: Utilization stats ===
+  mean=0.500  median=0.500  min=0.250  max=0.750
+
+[figure] analysis/m1/figures/bank_transition_heatmap_pagerank.png
+[figure] analysis/m1/figures/sharer_count_distribution_pagerank.png
+[figure] analysis/m1/figures/utilization_distribution_pagerank.png

@@ -1,0 +1,62 @@
+File: results/superdirectory/rawdata/events/pagerank_events.parquet
+
+=== Schema ===
+  event_type                     object          nulls=0
+  time_sec                       float64         nulls=0
+  address                        uint64          nulls=0
+  from_bank                      int32           nulls=0
+  to_bank                        int32           nulls=0
+  sharer_count                   int32           nulls=0
+  valid_subs                     int32           nulls=0
+  utilization                    float64         nulls=0
+
+=== Basic Stats ===
+  Total rows          : 54,814
+
+=== First 5 rows ===
+  event_type  time_sec     address  from_bank  to_bank  sharer_count  valid_subs  utilization
+0    promote  0.000695  8590594048          4        3             1           4          1.0
+1    promote  0.000695  8590594816          4        3             1           4          1.0
+2    promote  0.000695  8590596096          4        3             1           4          1.0
+3    promote  0.000695  8590596608          4        3             1           4          1.0
+4    promote  0.000695  8590595072          4        3             1           4          1.0
+
+=== Last 5 rows ===
+      event_type  time_sec      address  from_bank  to_bank  sharer_count  valid_subs  utilization
+54809    promote  0.001114  21476147200          1        0             1           4          1.0
+54810    promote  0.001114  21476116736          4        3             1           4          1.0
+54811    promote  0.001114  21476116480          3        2             1           4          1.0
+54812    promote  0.001114  21476114432          2        1             1           4          1.0
+54813    promote  0.001114  21476114432          1        0             1           4          1.0
+
+=== Value Counts (all categorical columns) ===
+
+  [event_type]
+    promote                54,761
+    demote                     53
+
+  [from_bank]
+    4                      41,537
+    3                      10,240
+    2                       2,468
+    1                         568
+    0                           1
+
+  [to_bank]
+    3                      41,549
+    2                      10,208
+    1                       2,457
+    0                         564
+    4                          36
+
+  [sharer_count]
+    1                      54,445
+    2                         275
+    0                          53
+    3                          41
+
+  [valid_subs]
+    4                      54,761
+    2                          19
+    3                          17
+    1                          17

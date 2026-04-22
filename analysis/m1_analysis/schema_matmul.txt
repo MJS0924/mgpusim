@@ -1,0 +1,62 @@
+File: results/superdirectory/rawdata/events/matrixmultiplication_events.parquet
+
+=== Schema ===
+  event_type                     object          nulls=0
+  time_sec                       float64         nulls=0
+  address                        uint64          nulls=0
+  from_bank                      int32           nulls=0
+  to_bank                        int32           nulls=0
+  sharer_count                   int32           nulls=0
+  valid_subs                     int32           nulls=0
+  utilization                    float64         nulls=0
+
+=== Basic Stats ===
+  Total rows          : 38,510
+
+=== First 5 rows ===
+  event_type  time_sec     address  from_bank  to_bank  sharer_count  valid_subs  utilization
+0    promote  0.000855  8592042496          4        3             1           4          1.0
+1    promote  0.000855  8592042752          4        3             1           4          1.0
+2    promote  0.000855  8592039936          4        3             1           4          1.0
+3    promote  0.000855  8592040192          4        3             1           4          1.0
+4    promote  0.000855  8592043008          4        3             1           4          1.0
+
+=== Last 5 rows ===
+      event_type  time_sec      address  from_bank  to_bank  sharer_count  valid_subs  utilization
+38505    promote  0.001917  21477806848          4        3             1           4          1.0
+38506    promote  0.001917  21477800960          3        2             1           4          1.0
+38507    promote  0.001917  21477806080          3        2             1           4          1.0
+38508    promote  0.001917  21477797888          2        1             1           4          1.0
+38509    promote  0.001917  21477785600          1        0             1           4          1.0
+
+=== Value Counts (all categorical columns) ===
+
+  [event_type]
+    promote                38,435
+    demote                     75
+
+  [from_bank]
+    4                      28,999
+    3                       7,245
+    2                       1,808
+    1                         458
+
+  [to_bank]
+    3                      29,017
+    2                       7,200
+    1                       1,790
+    0                         452
+    4                          51
+
+  [sharer_count]
+    1                      33,071
+    3                       3,429
+    2                       1,935
+    0                          75
+
+  [valid_subs]
+    4                      38,435
+    2                          26
+    1                          26
+    3                          14
+    0                           9

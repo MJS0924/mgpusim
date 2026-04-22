@@ -1,0 +1,50 @@
+=== Promotion/Demotion Analysis: matmul ===
+Total events    : 38,510
+Promotions      : 38,435  (99.8%)
+Demotions       : 75  (0.2%)
+Prom/Dem ratio  : 512.5x
+
+=== Promotion: FromBank → ToBank transition matrix ===
+to_bank      0     1     2      3
+from_bank                        
+1          452     0     0      0
+2            0  1790     0      0
+3            0     0  7194      0
+4            0     0     0  28999
+
+=== Demotion: FromBank → ToBank transition matrix ===
+to_bank    2   3   4
+from_bank           
+1          6   0   0
+2          0  18   0
+3          0   0  51
+
+=== Promotion: FromBank frequency ===
+  Bank 1:      452  (1.2%)
+  Bank 2:    1,790  (4.7%)
+  Bank 3:    7,194  (18.7%)
+  Bank 4:   28,999  (75.4%)
+
+=== Promotion: ToBank frequency ===
+  Bank 0:      452  (1.2%)
+  Bank 1:    1,790  (4.7%)
+  Bank 2:    7,194  (18.7%)
+  Bank 3:   28,999  (75.4%)
+
+=== Promotion: SharerCount distribution ===
+  SharerCount=1:   33,071  (86.0%)
+  SharerCount=2:    1,935  (5.0%)
+  SharerCount=3:    3,429  (8.9%)
+
+  Multi-GPU shared (sharer>=2): 14.0%
+  Private         (sharer==1): 86.0%
+
+=== Promotion: Utilization stats ===
+  mean=1.000  median=1.000  min=1.000  max=1.000
+
+=== Demotion: Utilization stats ===
+  mean=0.400  median=0.500  min=0.000  max=0.750
+
+[figure] analysis/m1/figures/bank_transition_heatmap_matmul.png
+[figure] analysis/m1/figures/sharer_count_distribution_matmul.png
+[figure] analysis/m1/figures/utilization_distribution_matmul.png
