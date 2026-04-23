@@ -49,6 +49,11 @@ type Runner struct {
 	pageMigrationPolicy   uint64
 	coherenceDirectory    uint64
 	idealDirectory        bool
+	sdNumBanks            int
+	sdLog2NumSubEntry     uint64
+	sdByteSize            uint64
+	sdDisableRSB          bool
+	sdDisableCBF          bool
 }
 
 // Init initializes the platform simulate
@@ -105,7 +110,12 @@ func (r *Runner) buildTimingPlatform() {
 		WithLog2CoherenceUnitSize(r.log2CoherenceUnitSize).
 		WithPageMigrationPolicy(r.pageMigrationPolicy).
 		WithCoherenceDirectory(r.coherenceDirectory).
-		WithIdealDirectory(r.idealDirectory)
+		WithIdealDirectory(r.idealDirectory).
+		WithSDNumBanks(r.sdNumBanks).
+		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).
+		WithSDByteSize(r.sdByteSize).
+		WithSDDisableRSB(r.sdDisableRSB).
+		WithSDDisableCBF(r.sdDisableCBF)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()

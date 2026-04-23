@@ -29,6 +29,11 @@ type Builder struct {
 	useMagicMemoryCopy    bool
 	pageMigrationPolicy   uint64
 	coherenceDirectory    uint64
+	sdNumBanks            int
+	sdLog2NumSubEntry     uint64
+	sdByteSize            uint64
+	sdDisableRSB          bool
+	sdDisableCBF          bool
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
@@ -46,6 +51,9 @@ func MakeBuilder() Builder {
 		gpuMemSize:         4 * mem.GB,
 		log2PageSize:       12,
 		useMagicMemoryCopy: false,
+		sdNumBanks:         5,
+		sdLog2NumSubEntry:  2,
+		sdByteSize:         512 * mem.KB,
 	}
 }
 
@@ -94,6 +102,31 @@ func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
 
 func (b Builder) WithIdealDirectory(bo bool) Builder {
 	b.idealDirectory = bo
+	return b
+}
+
+func (b Builder) WithSDNumBanks(n int) Builder {
+	b.sdNumBanks = n
+	return b
+}
+
+func (b Builder) WithSDLog2NumSubEntry(n uint64) Builder {
+	b.sdLog2NumSubEntry = n
+	return b
+}
+
+func (b Builder) WithSDByteSize(size uint64) Builder {
+	b.sdByteSize = size
+	return b
+}
+
+func (b Builder) WithSDDisableRSB(v bool) Builder {
+	b.sdDisableRSB = v
+	return b
+}
+
+func (b Builder) WithSDDisableCBF(v bool) Builder {
+	b.sdDisableCBF = v
 	return b
 }
 
@@ -197,7 +230,12 @@ func (b *Builder) createGPUBuilder(
 		WithDriver(gpuDriver).
 		WithPageMigrationPolicy(b.pageMigrationPolicy).
 		WithCoherenceDirectory(b.coherenceDirectory).
-		WithIdealDirectory(b.idealDirectory)
+		WithIdealDirectory(b.idealDirectory).
+		WithCohDirSize(b.sdByteSize).
+		WithSDNumBanks(b.sdNumBanks).
+		WithSDLog2NumSubEntry(b.sdLog2NumSubEntry).
+		WithSDDisableRSB(b.sdDisableRSB).
+		WithSDDisableCBF(b.sdDisableCBF)
 	fmt.Printf("[r9nano Builder]\tCreating GPU Builder with log2CacheLineSize %d, log2PageSize %d coherenceDirectory %d.\n",
 		b.log2CacheBlockSize, b.log2PageSize, b.coherenceDirectory)
 

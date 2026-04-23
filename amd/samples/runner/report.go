@@ -701,8 +701,12 @@ func (r *reporter) reportCacheEvictions() {
 	for _, tracer := range r.cacheHitRateTracers {
 		evb := tracer.tracer.GetStepCount("EvictValidBlock")
 		eib := tracer.tracer.GetStepCount("EvictInvalidBlock")
-		ivb := tracer.tracer.GetStepCount("InvalidateValidBlock")
-		iib := tracer.tracer.GetStepCount("InvalidateInvalidBlock")
+		ivbWrite := tracer.tracer.GetStepCount("InvalidateValidBlock-Write")
+		iibWrite := tracer.tracer.GetStepCount("InvalidateInvalidBlock-Write")
+		ivbEvict := tracer.tracer.GetStepCount("InvalidateValidBlock-Evict")
+		iibEvict := tracer.tracer.GetStepCount("InvalidateInvalidBlock-Evict")
+		ivb := ivbWrite + ivbEvict
+		iib := iibWrite + iibEvict
 		prfSt := tracer.tracer.GetStepCount("PrefetchStart")
 		prf := tracer.tracer.GetStepCount("Prefetch")
 		evtPrf := tracer.tracer.GetStepCount("EvictAndPrefetch")
@@ -738,6 +742,38 @@ func (r *reporter) reportCacheEvictions() {
 			Value:    float64(iib),
 			Unit:     "count",
 		})
+		if ivbWrite > 0 {
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     "InvalidateValidBlock-Write",
+				Value:    float64(ivbWrite),
+				Unit:     "count",
+			})
+		}
+		if iibWrite > 0 {
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     "InvalidateInvalidBlock-Write",
+				Value:    float64(iibWrite),
+				Unit:     "count",
+			})
+		}
+		if ivbEvict > 0 {
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     "InvalidateValidBlock-Evict",
+				Value:    float64(ivbEvict),
+				Unit:     "count",
+			})
+		}
+		if iibEvict > 0 {
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     "InvalidateInvalidBlock-Evict",
+				Value:    float64(iibEvict),
+				Unit:     "count",
+			})
+		}
 		r.dataRecorder.InsertData(tableName, metric{
 			Location: tracer.cache.Name(),
 			What:     "PrefetchStart",
@@ -1021,10 +1057,49 @@ func (r *reporter) reportCohDir() {
 		}
 	}
 
+	// AvgEvictEntryUtilization: REC·superdirectory 전용 — eviction 시 entry 사용률 평균
+	for _, tracer := range r.cohDirtracers {
+		type evictUtilReporter interface {
+			AvgEvictUtilization() float64
+			EvictCount() uint64
+		}
+		if r2, ok := tracer.cohDir.(evictUtilReporter); ok && r2.EvictCount() > 0 {
+			r.dataRecorder.InsertData(cohDirTable, metric{
+				Location: tracer.cohDir.Name(),
+				What:     "AvgEvictEntryUtilization",
+				Value:    r2.AvgEvictUtilization(),
+				Unit:     "ratio",
+			})
+			r.dataRecorder.InsertData(cohDirTable, metric{
+				Location: tracer.cohDir.Name(),
+				What:     "EvictCount",
+				Value:    float64(r2.EvictCount()),
+				Unit:     "count",
+			})
+		}
+	}
+
 	// BankChecked - N: 요청 한 건을 처리하기 위해 N개의 bank를 확인한 횟수 (SuperDirectory 전용)
 	for _, tracer := range r.cohDirtracers {
 		for n := 1; n <= 10; n++ {
 			what := fmt.Sprintf("BankChecked - %d", n)
+			count := tracer.tracer.GetStepCount(what)
+			if count == 0 {
+				continue
+			}
+			r.dataRecorder.InsertData(cohDirTable, metric{
+				Location: tracer.cohDir.Name(),
+				What:     what,
+				Value:    float64(count),
+				Unit:     "count",
+			})
+		}
+	}
+
+	// GetBankCount - N: selectBank() 진입 시 BloomFilter(GetBank)가 반환한 bank 수 분포 (SuperDirectory 전용)
+	for _, tracer := range r.cohDirtracers {
+		for n := 1; n <= 10; n++ {
+			what := fmt.Sprintf("GetBankCount - %d", n)
 			count := tracer.tracer.GetStepCount(what)
 			if count == 0 {
 				continue

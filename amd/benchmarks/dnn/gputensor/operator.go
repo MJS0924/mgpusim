@@ -21,10 +21,11 @@ var sizeOfInt32 = 4
 
 // GPUOperator can perform operations on GPU tensors.
 type GPUOperator struct {
-	driver       *driver.Driver
-	ctx          *driver.Context
-	verification bool
-	timerMutex   sync.Mutex
+	driver           *driver.Driver
+	ctx              *driver.Context
+	verification     bool
+	useUnifiedMemory bool
+	timerMutex       sync.Mutex
 	reportTime   bool
 	vStart, vEnd sim.VTimeInSec
 	start, end   time.Time
@@ -73,6 +74,11 @@ func NewGPUOperator(
 func (o *GPUOperator) EnableVerification() {
 	o.verification = true
 	o.cpuOperator = &tensor.CPUOperator{}
+}
+
+// EnableUnifiedMemory configures the operator to allocate tensors in unified memory.
+func (o *GPUOperator) EnableUnifiedMemory() {
+	o.useUnifiedMemory = true
 }
 
 // ReportTime lets the operator to report the execution time of each kernel.
@@ -194,7 +200,12 @@ func (o *GPUOperator) Create(size []int) tensor.Tensor {
 		size:   size,
 	}
 
-	t.ptr = o.driver.AllocateMemory(o.ctx, uint64(t.NumElement()*sizeOfFloat32))
+	byteSize := uint64(t.NumElement() * sizeOfFloat32)
+	if o.useUnifiedMemory {
+		t.ptr = o.driver.AllocateUnifiedMemory(o.ctx, byteSize)
+	} else {
+		t.ptr = o.driver.AllocateMemory(o.ctx, byteSize)
+	}
 
 	return t
 }

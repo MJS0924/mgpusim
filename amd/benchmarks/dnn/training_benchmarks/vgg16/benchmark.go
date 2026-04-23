@@ -16,11 +16,12 @@ import (
 
 // Benchmark defines the VGG16 network training benchmark.
 type Benchmark struct {
-	driver   *driver.Driver
-	ctx      *driver.Context
-	to       []*gputensor.GPUOperator
-	gpus     []int
-	contexts []*driver.Context
+	driver           *driver.Driver
+	ctx              *driver.Context
+	to               []*gputensor.GPUOperator
+	gpus             []int
+	contexts         []*driver.Context
+	useUnifiedMemory bool
 
 	networks []training.Network
 	trainer  gputraining.DataParallelismMultiGPUTrainer
@@ -63,6 +64,10 @@ func (b *Benchmark) defineNetwork(gpuID int) {
 
 	if b.EnableVerification {
 		to.EnableVerification()
+	}
+
+	if b.useUnifiedMemory {
+		to.EnableUnifiedMemory()
 	}
 
 	network := training.Network{
@@ -201,5 +206,5 @@ func (b *Benchmark) Verify() {
 
 // SetUnifiedMemory asks the benchmark to use unified memory.
 func (b *Benchmark) SetUnifiedMemory() {
-	panic("unified memory is not supported by dnn workloads")
+	b.useUnifiedMemory = true
 }

@@ -28,6 +28,10 @@ var (
 	workloadIDFlag   = flag.Uint("workload-id", 0, "Workload ID embedded in snapshot rows")
 	enableEventLogFlag = flag.Bool("enable-event-log", false, "Record promotion/demotion events to parquet (default: off)")
 	eventLogPathFlag   = flag.String("event-log-path", "events.parquet", "Output path for the event log parquet file")
+
+	matmulXFlag = flag.Int("matmul-x", 0, "matrixmultiplication X dimension (0 = default 256)")
+	matmulYFlag = flag.Int("matmul-y", 0, "matrixmultiplication Y dimension (0 = default 256)")
+	matmulZFlag = flag.Int("matmul-z", 0, "matrixmultiplication Z dimension (0 = default 256)")
 )
 
 func main() {
@@ -44,6 +48,9 @@ func main() {
 		workloadID:     uint16(*workloadIDFlag),
 		enableEventLog: *enableEventLogFlag,
 		eventLogPath:   *eventLogPathFlag,
+		matmulX:        *matmulXFlag,
+		matmulY:        *matmulYFlag,
+		matmulZ:        *matmulZFlag,
 	}
 
 	log.Printf("[m1] starting: workload=%s regionSize=%d seed=%d windowCycles=%d",

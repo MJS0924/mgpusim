@@ -59,6 +59,7 @@ func (b *Benchmark) SelectGPU(gpus []int) {
 // SetUnifiedMemory configures the benchmark to use unified memory.
 func (b *Benchmark) SetUnifiedMemory() {
 	b.useUnifiedMemory = true
+	b.operator.EnableUnifiedMemory()
 }
 
 // Run runs the benchmark.

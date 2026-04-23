@@ -44,6 +44,10 @@ type Builder struct {
 	log2CoherenceUnitSize          uint64
 	log2MemoryBankInterleavingSize uint64
 	cohDirSize                     uint64 // 실제 크기는 아니고 커버하는 범위가 될 것
+	sdNumBanks                     int
+	sdLog2NumSubEntry              uint64
+	sdDisableRSB                   bool
+	sdDisableCBF                   bool
 	memAddrOffset                  uint64
 	dramSize                       uint64
 	globalStorage                  *mem.Storage
@@ -99,6 +103,8 @@ func MakeBuilder() Builder {
 		log2PageSize:                   12,
 		log2MemoryBankInterleavingSize: 7,
 		cohDirSize:                     512 * mem.KB,
+		sdNumBanks:                     5,
+		sdLog2NumSubEntry:              2,
 		memAddrOffset:                  0,
 		dramSize:                       4 * mem.GB,
 		// l2CacheSize:                    2 * mem.MB,
@@ -228,6 +234,31 @@ func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
 
 func (b Builder) WithIdealDirectory(bo bool) Builder {
 	b.idealDirectory = bo
+	return b
+}
+
+func (b Builder) WithCohDirSize(size uint64) Builder {
+	b.cohDirSize = size
+	return b
+}
+
+func (b Builder) WithSDNumBanks(n int) Builder {
+	b.sdNumBanks = n
+	return b
+}
+
+func (b Builder) WithSDLog2NumSubEntry(n uint64) Builder {
+	b.sdLog2NumSubEntry = n
+	return b
+}
+
+func (b Builder) WithSDDisableRSB(v bool) Builder {
+	b.sdDisableRSB = v
+	return b
+}
+
+func (b Builder) WithSDDisableCBF(v bool) Builder {
+	b.sdDisableCBF = v
 	return b
 }
 
@@ -824,6 +855,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
+			WithDirectoryLatency(1).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -861,6 +893,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
+			WithDirectoryLatency(1).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -891,17 +924,18 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithDeviceID(int(b.gpuID)).
 			WithLog2BlockSize(b.log2CacheLineSize).
 			WithLog2PageSize(b.log2PageSize).
-			WithLog2NumSubEntry(2).
-			// WithLog2UnitSize(0).
+			WithLog2NumSubEntry(b.sdLog2NumSubEntry).
+			WithNumBanks(b.sdNumBanks).
 			WithWayAssociativity(8).
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
+			WithDirectoryLatency(1).
 			WithAddressMapperType("interleaved").
-			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
-			// WithIdealDirectory(b.idealDirectory).
 			WithFetchSingleCacheLine(true).
+			WithDisableRSB(b.sdDisableRSB).
+			WithDisableCBF(b.sdDisableCBF).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.SuperDir", b.name))
@@ -936,6 +970,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
+			WithDirectoryLatency(1).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			// WithIdealDirectory(b.idealDirectory).
@@ -973,6 +1008,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
+			WithDirectoryLatency(1).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).

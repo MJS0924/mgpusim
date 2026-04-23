@@ -585,6 +585,7 @@ func (c *Comp) processInvReq(
 		WithReqFrom(req.Meta().ID).
 		WithDstRDMA(req.DstRDMA).
 		WithRegionID(req.RegionID).
+		WithIsWriteInv(req.IsWriteInv).
 		Build()
 
 	err := (*sim.SendError)(nil)
@@ -822,6 +823,7 @@ func (c *Comp) sendInvReq(
 		WithReqFrom(req.Meta().ID).
 		WithDstRDMA(req.DstRDMA).
 		WithRegionID(req.RegionID).
+		WithIsWriteInv(req.IsWriteInv).
 		Build()
 
 	err := c.RDMADataOutside.Send(reqToOutside)

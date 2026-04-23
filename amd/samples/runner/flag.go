@@ -87,6 +87,16 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
+var sdNumBanks = flag.Int("sd-num-banks", 5,
+	"SuperDirectory: number of banks (2–8)")
+var sdLog2NumSubEntry = flag.Uint64("sd-log2-sub-entry", 2,
+	"SuperDirectory: log2 sub-entry interval (1=2x, 2=4x default, 3=8x)")
+var sdByteSize = flag.Uint64("sd-byte-size", 512*1024,
+	"SuperDirectory: directory byte size per GPU (e.g. 262144=256KB, 524288=512KB, 1048576=1MB)")
+var sdDisableRSB = flag.Bool("sd-disable-rsb", false,
+	"SuperDirectory: disable Region Size Buffer")
+var sdDisableCBF = flag.Bool("sd-disable-cbf", false,
+	"SuperDirectory: disable Counting Bloom Filter")
 
 // parseFlag applies the runner flag to runner object
 func (r *Runner) parseFlag() *Runner {
@@ -163,6 +173,11 @@ func (r *Runner) parseGPUFlag() {
 	// }
 
 	r.idealDirectory = *idealDirectory
+	r.sdNumBanks = *sdNumBanks
+	r.sdLog2NumSubEntry = *sdLog2NumSubEntry
+	r.sdByteSize = *sdByteSize
+	r.sdDisableRSB = *sdDisableRSB
+	r.sdDisableCBF = *sdDisableCBF
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

@@ -101,5 +101,5 @@ func (b *Benchmark) Verify() {
 
 // SetUnifiedMemory asks the benchmark to use unified memory.
 func (b *Benchmark) SetUnifiedMemory() {
-	panic("unified memory is not supported by dnn workloads")
+	b.to.EnableUnifiedMemory()
 }

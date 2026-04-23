@@ -21,6 +21,9 @@ type m1Config struct {
 
 	enableEventLog bool
 	eventLogPath   string
+
+	// Per-workload size overrides (0 = use hardcoded default).
+	matmulX, matmulY, matmulZ int
 }
 
 // dirCfg returns the coherence.DirectoryConfig for this run.
