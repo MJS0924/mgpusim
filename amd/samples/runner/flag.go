@@ -98,6 +98,13 @@ var sdDisableRSB = flag.Bool("sd-disable-rsb", false,
 var sdDisableCBF = flag.Bool("sd-disable-cbf", false,
 	"SuperDirectory: disable Counting Bloom Filter")
 
+var perWindowSnapshotFlag = flag.Bool("per-window-snapshot", false,
+	"Capture per-window cumulative metrics at instruction boundaries (default OFF).")
+var windowInstructionsFlag = flag.Uint64("window-instructions", 10_000_000,
+	"Number of retired instructions per snapshot window (used with -per-window-snapshot).")
+var perWindowOutputFlag = flag.String("per-window-output", "",
+	"Output CSV path for per-window metrics. Defaults to <metric-file-name>_per_window.csv in CWD.")
+
 // parseFlag applies the runner flag to runner object
 func (r *Runner) parseFlag() *Runner {
 	r.parseSimulationFlags()

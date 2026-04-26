@@ -82,6 +82,32 @@ type trafficTracer struct {
 	tracer *tracing.StepCountTracer
 }
 
+// entryUtilProvider is satisfied by both REC.Comp and superdirectory.Comp,
+// which accumulate eviction-time sub-entry utilization samples internally.
+type entryUtilProvider interface {
+	Name() string
+	AvgEvictUtilization() float64
+	EvictCount() uint64
+}
+
+// diagCountsProvider is satisfied by REC.Comp for silent-eviction diagnosis.
+// (alloc, needEvict, silentReset, defCleanup, invSent, invSkippedSelf)
+type diagCountsProvider interface {
+	Name() string
+	DiagCounts() (uint64, uint64, uint64, uint64, uint64, uint64)
+}
+
+// actionCountsProvider is satisfied by both REC.Comp and CD optdirectory.Comp,
+// returning per-action dispatch counts plus L2/MSHR forward counts.
+type actionCountsProvider interface {
+	Name() string
+	ActionCounts() map[string]uint64
+}
+
+type dirEntryUtilTracer struct {
+	comp entryUtilProvider
+}
+
 type reporter struct {
 	dataRecorder datarecording.DataRecorder
 
@@ -97,6 +123,7 @@ type reporter struct {
 	simdBusyTimeTracers     []*simdBusyTimeTracer
 	cuCPITraces             []*cuCPIStackTracer
 	trafficTracer           []*trafficTracer
+	dirEntryUtilTracers     []*dirEntryUtilTracer
 
 	ReportInstCount            bool
 	ReportCacheLatency         bool
@@ -108,6 +135,8 @@ type reporter struct {
 	ReportCPIStack             bool
 
 	log2BlockSize uint64
+
+	windowSnapshotter *windowSnapshotter
 }
 
 func newReporter(s *simulation.Simulation) *reporter {
@@ -136,6 +165,8 @@ func (r *reporter) injectTracers(s *simulation.Simulation) {
 	r.injectSIMDBusyTimeTracer(s)
 	r.injectTrafficTracer(s)
 	r.injectCoalescabilityHooks(s)
+	r.injectDirEntryUtilTracer(s)
+	r.injectWindowSnapshotter(s)
 }
 
 // kernelBoundaryTracer implements tracing.Tracer.
@@ -326,7 +357,7 @@ func (r *reporter) injectCacheLatencyTracer(s *simulation.Simulation) {
 }
 
 func (r *reporter) injectCacheHitRateTracer(s *simulation.Simulation) {
-	if !*reportAll && !*cacheLatencyReportFlag {
+	if !*reportAll && !*cacheLatencyReportFlag && !*perWindowSnapshotFlag {
 		return
 	}
 
@@ -500,6 +531,11 @@ func (r *reporter) report() {
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
 	r.reportTraffic()
+	r.reportDirEntryUtil()
+
+	if r.windowSnapshotter != nil {
+		r.windowSnapshotter.close()
+	}
 }
 
 func (r *reporter) reportKernelTime() {
@@ -1253,4 +1289,108 @@ func (r *reporter) reportTraffic() {
 			})
 		}
 	}
+}
+
+func (r *reporter) injectDirEntryUtilTracer(s *simulation.Simulation) {
+	for _, comp := range s.Components() {
+		if p, ok := comp.(entryUtilProvider); ok {
+			name := p.Name()
+			if strings.Contains(name, "RECDir") || strings.Contains(name, "SuperDir") {
+				r.dirEntryUtilTracers = append(r.dirEntryUtilTracers, &dirEntryUtilTracer{comp: p})
+			}
+		}
+	}
+}
+
+func (r *reporter) reportDirEntryUtil() {
+	for _, t := range r.dirEntryUtilTracers {
+		r.dataRecorder.InsertData(cohDirTable, metric{
+			Location: t.comp.Name(),
+			What:     "avg_evict_utilization",
+			Value:    t.comp.AvgEvictUtilization(),
+			Unit:     "ratio",
+		})
+		r.dataRecorder.InsertData(cohDirTable, metric{
+			Location: t.comp.Name(),
+			What:     "evict_count",
+			Value:    float64(t.comp.EvictCount()),
+			Unit:     "count",
+		})
+
+		if dp, ok := t.comp.(diagCountsProvider); ok {
+			alloc, needEvict, silentReset, defCleanup, invSent, invSkipSelf := dp.DiagCounts()
+			for _, kv := range []struct {
+				name  string
+				value uint64
+			}{
+				{"alloc_count", alloc},
+				{"need_eviction_count", needEvict},
+				{"silent_reset_count", silentReset},
+				{"defensive_cleanup_count", defCleanup},
+				{"inv_sent_count", invSent},
+				{"inv_skipped_self_only_count", invSkipSelf},
+			} {
+				r.dataRecorder.InsertData(cohDirTable, metric{
+					Location: dp.Name(),
+					What:     kv.name,
+					Value:    float64(kv.value),
+					Unit:     "count",
+				})
+			}
+		}
+	}
+
+	// Also emit ActionCounts for any directory that supports it (REC + CD).
+	seen := make(map[string]bool)
+	emitActionCounts := func(name string, ap actionCountsProvider) {
+		if seen[name] {
+			return
+		}
+		seen[name] = true
+		for k, value := range ap.ActionCounts() {
+			r.dataRecorder.InsertData(cohDirTable, metric{
+				Location: name,
+				What:     k,
+				Value:    float64(value),
+				Unit:     "count",
+			})
+		}
+	}
+	for _, t := range r.dirEntryUtilTracers {
+		if ap, ok := t.comp.(actionCountsProvider); ok {
+			emitActionCounts(ap.Name(), ap)
+		}
+	}
+	for _, t := range r.cohDirtracers {
+		if ap, ok := t.cohDir.(actionCountsProvider); ok {
+			emitActionCounts(ap.Name(), ap)
+		}
+	}
+}
+
+func (r *reporter) injectWindowSnapshotter(s *simulation.Simulation) {
+	if !*perWindowSnapshotFlag {
+		return
+	}
+
+	outPath := *perWindowOutputFlag
+	if outPath == "" {
+		outPath = *filenameFlag + "_per_window.csv"
+	}
+
+	snap := newWindowSnapshotter(s.GetEngine(), *windowInstructionsFlag, outPath, r)
+	if err := snap.open(); err != nil {
+		fmt.Printf("[per-window] WARNING: could not open CSV: %v\n", err)
+		return
+	}
+
+	for _, comp := range s.Components() {
+		if strings.Contains(comp.Name(), "CU") {
+			tracing.CollectTrace(comp.(tracing.NamedHookable), snap)
+		}
+	}
+
+	r.windowSnapshotter = snap
+	fmt.Printf("[per-window] snapshot enabled: window=%d inst, output=%s\n",
+		*windowInstructionsFlag, outPath)
 }
