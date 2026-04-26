@@ -149,7 +149,7 @@ func (a *memoryAllocatorImpl) AllocateUnified(
 		}
 
 		deviceID := a.nextDeviceID + 2
-		a.nextDeviceID = (a.nextDeviceID + 1) % (len(a.devices) - 3)
+		a.nextDeviceID = (a.nextDeviceID + 1) % (len(a.devices) - 2)
 
 		vAddr := a.allocatePages(int(chunkPages), pid, deviceID, true)
 		if first {
