@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	superdirectory "github.com/sarchlab/akita/v4/mem/cache/superdirectory"
 	"github.com/sarchlab/akita/v4/mem/cache/writebackcoh"
 	"github.com/sarchlab/akita/v4/sim"
+	cpmod "github.com/sarchlab/mgpusim/v4/amd/timing/cp"
 	"github.com/sarchlab/mgpusim/v4/amd/benchmarks/amdappsdk/bitonicsort"
 	"github.com/sarchlab/mgpusim/v4/amd/benchmarks/amdappsdk/fastwalshtransform"
 	"github.com/sarchlab/mgpusim/v4/amd/benchmarks/amdappsdk/floydwarshall"
@@ -33,11 +35,13 @@ import (
 	"github.com/sarchlab/mgpusim/v4/instrument/adapter"
 )
 
-// clockHook drives PhaseClock.Tick on every simulated event.
+// clockHook drives one or more PhaseClocks on every simulated event.
 // It converts sim.VTimeInSec to a cycle count using 1 GHz CU clock.
+// All clocks share the same time source; per-GPU clocks are advanced together.
 type clockHook struct {
-	clock *instrument.PhaseClock
-	freq  sim.Freq
+	clocks      []*instrument.PhaseClock
+	freq        sim.Freq
+	currentCycle *uint64 // shared; updated before Tick so KernelBoundary sees correct value
 }
 
 func (h *clockHook) Func(ctx sim.HookCtx) {
@@ -49,7 +53,30 @@ func (h *clockHook) Func(ctx sim.HookCtx) {
 		return
 	}
 	cycle := h.freq.Cycle(evt.Time())
-	h.clock.Tick(cycle)
+	if h.currentCycle != nil {
+		*h.currentCycle = cycle
+	}
+	for _, c := range h.clocks {
+		c.Tick(cycle)
+	}
+}
+
+// kernelCompleteHook catches HookPosKernelComplete on a CommandProcessor and
+// fires SignalKernelBoundary on the associated per-GPU PhaseClock.
+type kernelCompleteHook struct {
+	clock        *instrument.PhaseClock
+	currentCycle *uint64
+}
+
+func (h *kernelCompleteHook) Func(ctx sim.HookCtx) {
+	if ctx.Pos != cpmod.HookPosKernelComplete {
+		return
+	}
+	info, ok := ctx.Item.(cpmod.KernelCompleteHookInfo)
+	if !ok {
+		return
+	}
+	h.clock.SignalKernelBoundary(info.KernelID, *h.currentCycle)
 }
 
 // snapshotSqliteFiles returns the set of akita_sim_*.sqlite3 paths
@@ -90,7 +117,8 @@ func runM1(cfg *m1Config) error {
 	// not available without driver modification — see TODO_PHASE2.md).
 	clock := instrument.NewPhaseClock(cfg.windowCycles, cfg.initialPhaseID())
 	const cuFreq sim.Freq = 1 * sim.GHz
-	eng.AcceptHook(&clockHook{clock: clock, freq: cuFreq})
+	var currentCycle uint64
+	eng.AcceptHook(&clockHook{clocks: []*instrument.PhaseClock{clock}, freq: cuFreq, currentCycle: &currentCycle})
 
 	m := instrument.NewPhaseMetrics()
 	m.PhaseID = cfg.initialPhaseID()
@@ -141,6 +169,18 @@ func runM1(cfg *m1Config) error {
 	}
 	adapter.RegisterPhaseLifecycle(clock, m, sink, resetables...)
 
+	// M1-MOD-7: wire per-GPU bank snapshot sinks (only when flag is set).
+	var bankSinks []*adapter.BankSnapshotSink
+	if cfg.bankSnapshotOut != "" {
+		var err error
+		bankSinks, err = wireM1Mod7(cfg, simObj, eng, &currentCycle, clock)
+		if err != nil {
+			return fmt.Errorf("M1-MOD-7 wiring: %w", err)
+		}
+		log.Printf("[m1-mod7] wired %d per-GPU bank snapshot sinks, interval=%d cycles",
+			len(bankSinks), cfg.bankSnapshotInterval)
+	}
+
 	// Set up workload.
 	if err := setupWorkload(cfg, r); err != nil {
 		return fmt.Errorf("setup workload: %w", err)
@@ -152,6 +192,17 @@ func runM1(cfg *m1Config) error {
 	// Flush final partial phase.
 	if snap, err := m.Flush(); err == nil {
 		_ = sink.PushSnapshot(snap)
+	}
+
+	// Flush M1-MOD-7 bank snapshot sinks.
+	for _, bs := range bankSinks {
+		remoteAccept, doWriteMiss, doWriteMissRemote := bs.DiagCounts()
+		if err := bs.Flush(); err != nil {
+			log.Printf("[m1-mod7] flush error for %s: %v", bs.Path(), err)
+		} else {
+			log.Printf("[m1-mod7] wrote %d snapshot rows → %s (diag: remoteAccept=%d doWriteMiss=%d doWriteMissRemote=%d alloc=%d)",
+				bs.TotalRows(), bs.Path(), remoteAccept, doWriteMiss, doWriteMissRemote, bs.TotalRows())
+		}
 	}
 
 	if err := sink.Close(); err != nil {
@@ -187,6 +238,100 @@ func runM1(cfg *m1Config) error {
 	cleanNewSqliteFiles(sqliteBefore)
 
 	return nil
+}
+
+// wireM1Mod7 wires per-GPU bank snapshot sinks to every superdirectory found
+// in the simulation. It returns the sinks so the caller can flush them after Run().
+//
+// For each superdirectory component (one per GPU):
+//  1. A per-GPU PhaseClock (window = bankSnapshotInterval cycles) is created.
+//  2. The global clockHook is extended to drive the new clock.
+//  3. A BankSnapshotSink is created and registered on the per-GPU clock.
+//  4. The CommandProcessor of the same GPU gets a kernelCompleteHook that
+//     calls clock.SignalKernelBoundary → triggers kernel-boundary snapshot.
+func wireM1Mod7(
+	cfg *m1Config,
+	simObj interface{ Components() []sim.Component },
+	eng sim.Engine,
+	currentCycle *uint64,
+	globalClock *instrument.PhaseClock,
+) ([]*adapter.BankSnapshotSink, error) {
+
+	const cuFreq sim.Freq = 1 * sim.GHz
+
+	// Index components by GPU name prefix (everything before the last ".").
+	cpByPrefix := map[string]*cpmod.CommandProcessor{}
+	sdByPrefix := map[string]*superdirectory.Comp{}
+
+	for _, comp := range simObj.Components() {
+		name := comp.Name()
+		if sd, ok := comp.(*superdirectory.Comp); ok && strings.HasSuffix(name, ".SuperDir") {
+			prefix := strings.TrimSuffix(name, ".SuperDir")
+			sdByPrefix[prefix] = sd
+		}
+		if cpComp, ok := comp.(*cpmod.CommandProcessor); ok && strings.HasSuffix(name, ".CommandProcessor") {
+			prefix := strings.TrimSuffix(name, ".CommandProcessor")
+			cpByPrefix[prefix] = cpComp
+		}
+	}
+
+	if len(sdByPrefix) == 0 {
+		log.Printf("[m1-mod7] WARNING: no superdirectory components found — " +
+			"is -coherence-directory=SuperDirectory set?")
+		return nil, nil
+	}
+
+	var sinks []*adapter.BankSnapshotSink
+
+	for prefix, sd := range sdByPrefix {
+		gpuID := int32(sd.DeviceID())
+		outPath := fmt.Sprintf("%s_gpu%d.parquet", cfg.bankSnapshotOut, gpuID)
+
+		sink, err := adapter.NewBankSnapshotSink(outPath, gpuID, sd)
+		if err != nil {
+			return nil, fmt.Errorf("GPU %d sink: %w", gpuID, err)
+		}
+
+		// Per-GPU PhaseClock driven by the same engine time source.
+		gpuClock := instrument.NewPhaseClock(cfg.bankSnapshotInterval, instrument.PhaseID{})
+		eng.AcceptHook(&clockHook{
+			clocks:       []*instrument.PhaseClock{gpuClock},
+			freq:         cuFreq,
+			currentCycle: currentCycle,
+		})
+
+		cycleGetter := func() uint64 { return *currentCycle }
+
+		// Periodic window snapshots.
+		gpuClock.OnWindowBoundary(sink.WindowBoundaryFunc(cycleGetter))
+
+		// Kernel-boundary snapshots: hook into the matching CP.
+		if cpComp, ok := cpByPrefix[prefix]; ok {
+			cpComp.AcceptHook(&kernelCompleteHook{
+				clock:        gpuClock,
+				currentCycle: currentCycle,
+			})
+			log.Printf("[m1-mod7] GPU %d: CP hook registered (%s.CommandProcessor)", gpuID, prefix)
+		} else {
+			log.Printf("[m1-mod7] GPU %d: WARNING no matching CP for prefix %q — kernel boundaries disabled", gpuID, prefix)
+		}
+
+		// Kernel-boundary snapshot callback on the per-GPU clock.
+		gpuClock.OnKernelBoundary(sink.KernelBoundaryFunc(cycleGetter))
+
+		sinks = append(sinks, sink)
+		log.Printf("[m1-mod7] GPU %d: bank snapshot → %s (interval=%d cycles, capacity %v)",
+			gpuID, outPath, cfg.bankSnapshotInterval,
+			[]int32{
+				int32(sd.BankMaxCapacity(0)),
+				int32(sd.BankMaxCapacity(1)),
+				int32(sd.BankMaxCapacity(2)),
+				int32(sd.BankMaxCapacity(3)),
+				int32(sd.BankMaxCapacity(4)),
+			})
+	}
+
+	return sinks, nil
 }
 
 // setupWorkload instantiates and registers the requested workload benchmark.

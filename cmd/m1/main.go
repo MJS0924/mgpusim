@@ -3,13 +3,14 @@
 // It runs a specified workload under a given directory config (region size)
 // and writes phase-level snapshots to a parquet file.
 //
-// Kernel boundary: not available without driver modification (see
-// TODO_PHASE2.md). Phase C uses window-only boundaries.
+// M1-MOD-7: Add --bank-snapshot-out and --bank-snapshot-interval to enable
+// per-GPU superdirectory bank state snapshots. Requires --coherence-directory=SuperDirectory.
 //
 // Usage:
 //
-//	go run ./cmd/m1 -workload=simpleconvolution -region-size=64 \
-//	  -timing -gpus 1 -disable-rtm -output-dir=results/m1/raw
+//	go run ./cmd/m1 -workload=pagerank \
+//	  -timing -gpus 4 -coherence-directory=SuperDirectory \
+//	  -bank-snapshot-out=results/m1_mod7/pagerank -bank-snapshot-interval=1000
 package main
 
 import (
@@ -28,6 +29,13 @@ var (
 	workloadIDFlag   = flag.Uint("workload-id", 0, "Workload ID embedded in snapshot rows")
 	enableEventLogFlag = flag.Bool("enable-event-log", false, "Record promotion/demotion events to parquet (default: off)")
 	eventLogPathFlag   = flag.String("event-log-path", "events.parquet", "Output path for the event log parquet file")
+
+	// M1-MOD-7 bank snapshot flags
+	bankSnapshotOutFlag      = flag.String("bank-snapshot-out", "",
+		"Directory prefix for per-GPU bank snapshot Parquet files (empty = disabled). "+
+			"Files written as <prefix>_gpu<N>.parquet. Requires -coherence-directory=SuperDirectory.")
+	bankSnapshotIntervalFlag = flag.Uint64("bank-snapshot-interval", 1000,
+		"Periodic snapshot interval in GPU cycles (default 1000). Used when --bank-snapshot-out is set.")
 
 	matmulXFlag = flag.Int("matmul-x", 0, "matrixmultiplication X dimension (0 = default 256)")
 	matmulYFlag = flag.Int("matmul-y", 0, "matrixmultiplication Y dimension (0 = default 256)")
@@ -48,9 +56,13 @@ func main() {
 		workloadID:     uint16(*workloadIDFlag),
 		enableEventLog: *enableEventLogFlag,
 		eventLogPath:   *eventLogPathFlag,
-		matmulX:        *matmulXFlag,
-		matmulY:        *matmulYFlag,
-		matmulZ:        *matmulZFlag,
+
+		bankSnapshotOut:      *bankSnapshotOutFlag,
+		bankSnapshotInterval: *bankSnapshotIntervalFlag,
+
+		matmulX: *matmulXFlag,
+		matmulY: *matmulYFlag,
+		matmulZ: *matmulZFlag,
 	}
 
 	log.Printf("[m1] starting: workload=%s regionSize=%d seed=%d windowCycles=%d",

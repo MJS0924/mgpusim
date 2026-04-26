@@ -22,6 +22,11 @@ type m1Config struct {
 	enableEventLog bool
 	eventLogPath   string
 
+	// M1-MOD-7 bank snapshot config.
+	// bankSnapshotOut is the directory prefix; empty disables snapshots.
+	bankSnapshotOut      string
+	bankSnapshotInterval uint64
+
 	// Per-workload size overrides (0 = use hardcoded default).
 	matmulX, matmulY, matmulZ int
 }
