@@ -147,7 +147,14 @@ func (b *Builder) buildDispatchers(cp *CommandProcessor) {
 		WithCUResourcePool(cuResourcePool).
 		WithDispatchingPort(cp.ToCUs).
 		WithRespondingPort(cp.ToDriver).
-		WithMonitor(b.monitor)
+		WithMonitor(b.monitor).
+		WithKernelCompleteCallback(func(kernelID string) {
+			cp.InvokeHook(sim.HookCtx{
+				Domain: cp,
+				Pos:    HookPosKernelComplete,
+				Item:   KernelCompleteHookInfo{KernelID: kernelID},
+			})
+		})
 
 	for i := 0; i < b.numDispatchers; i++ {
 		disp := builder.Build(fmt.Sprintf("%s.Dispatcher%d", cp.Name(), i))

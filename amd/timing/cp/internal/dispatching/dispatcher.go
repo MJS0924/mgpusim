@@ -48,6 +48,10 @@ type DispatcherImpl struct {
 	progressBar *monitoring.ProgressBar
 
 	pause bool
+
+	// onKernelComplete is called after LaunchKernelRsp is successfully sent.
+	// Set via WithKernelCompleteCallback in the builder. Nil = no-op.
+	onKernelComplete func(kernelID string)
 }
 
 // Name returns the name of the dispatcher
@@ -219,6 +223,10 @@ func (d *DispatcherImpl) completeKernel() (
 		}
 
 		tracing.TraceReqComplete(req, d.cp)
+
+		if d.onKernelComplete != nil {
+			d.onKernelComplete(req.ID)
+		}
 
 		return true
 	}

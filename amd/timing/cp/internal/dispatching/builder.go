@@ -17,6 +17,8 @@ type Builder struct {
 	respondingPort  sim.Port
 	dispatchingPort sim.Port
 	monitor         *monitoring.Monitor
+
+	onKernelComplete func(kernelID string)
 }
 
 // MakeBuilder creates a builder with default dispatching configurations.
@@ -71,6 +73,13 @@ func (b Builder) WithMonitor(monitor *monitoring.Monitor) Builder {
 	return b
 }
 
+// WithKernelCompleteCallback registers cb to be called after LaunchKernelRsp
+// is successfully sent. Intended for per-GPU instrumentation hooks.
+func (b Builder) WithKernelCompleteCallback(cb func(kernelID string)) Builder {
+	b.onKernelComplete = cb
+	return b
+}
+
 // Build creates a dispatcher.
 func (b Builder) Build(name string) Dispatcher {
 	d := &DispatcherImpl{
@@ -89,6 +98,7 @@ func (b Builder) Build(name string) Dispatcher {
 		},
 		constantKernelOverhead: 0,
 		monitor:                b.monitor,
+		onKernelComplete:       b.onKernelComplete,
 	}
 
 	switch b.alg {
