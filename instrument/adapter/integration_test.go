@@ -438,6 +438,47 @@ func TestDirectoryAdapter_SharerEventCallback(t *testing.T) {
 	}
 }
 
+// ─── I12: L2Adapter.OnL2Invalidation routes into PhaseMetrics ────────────────
+
+func TestI12_L2Adapter_OnL2Invalidation(t *testing.T) {
+	m := instrument.NewPhaseMetrics()
+	a := NewL2Adapter(m, defaultCfg)
+
+	a.OnL2Invalidation(true)  // write-initiated
+	a.OnL2Invalidation(true)  // write-initiated
+	a.OnL2Invalidation(false) // eviction-initiated
+
+	if m.WriteInitInvalidations != 2 {
+		t.Errorf("I12: want WriteInitInvalidations=2; got %d", m.WriteInitInvalidations)
+	}
+	if m.EvictInitInvalidations != 1 {
+		t.Errorf("I12: want EvictInitInvalidations=1; got %d", m.EvictInitInvalidations)
+	}
+}
+
+// ─── I13: L2Adapter.Func dispatches HookPosL2Invalidation ────────────────────
+
+func TestI13_L2Adapter_Func_L2Invalidation(t *testing.T) {
+	m := instrument.NewPhaseMetrics()
+	a := NewL2Adapter(m, defaultCfg)
+
+	a.Func(sim.HookCtx{
+		Pos:    writebackcoh.HookPosL2Invalidation,
+		Detail: writebackcoh.L2InvalidationDetail{IsWriteInv: true, Addr: 0x1000},
+	})
+	a.Func(sim.HookCtx{
+		Pos:    writebackcoh.HookPosL2Invalidation,
+		Detail: writebackcoh.L2InvalidationDetail{IsWriteInv: false, Addr: 0x2000},
+	})
+
+	if m.WriteInitInvalidations != 1 {
+		t.Errorf("I13: want WriteInitInvalidations=1; got %d", m.WriteInitInvalidations)
+	}
+	if m.EvictInitInvalidations != 1 {
+		t.Errorf("I13: want EvictInitInvalidations=1; got %d", m.EvictInitInvalidations)
+	}
+}
+
 // ─── RegisterPhaseLifecycle with PhaseResetable ───────────────────────────────
 
 func TestRegisterPhaseLifecycle_ResetsL2AdapterOnBoundary(t *testing.T) {

@@ -79,6 +79,15 @@ func (a *L2Adapter) OnRegionFetch(addr uint64, sizeBytes uint64) {
 	a.registerRegionIfNew(addr)
 }
 
+// OnL2Invalidation records one L2-side invalidation (write-initiated or eviction-initiated).
+func (a *L2Adapter) OnL2Invalidation(isWriteInv bool) {
+	if isWriteInv {
+		a.metrics.AddInvalidation(instrument.InvSourceWriteInit)
+	} else {
+		a.metrics.AddInvalidation(instrument.InvSourceEvictInit)
+	}
+}
+
 // ResetPhase clears the per-phase region dedup map. Must be called at every
 // phase boundary (RegisterPhaseLifecycle handles this automatically when
 // L2Adapter is passed as a PhaseResetable).
@@ -87,8 +96,9 @@ func (a *L2Adapter) ResetPhase() {
 }
 
 // Func implements sim.Hook. It dispatches:
-//   - HookPosL2Access  → OnL2Access(detail.Hit, detail.Addr)
-//   - HookPosRegionFetch → OnRegionFetch(detail.RegionTag, detail.RegionSizeBytes)
+//   - HookPosL2Access       → OnL2Access(detail.Hit, detail.Addr)
+//   - HookPosRegionFetch    → OnRegionFetch(detail.RegionTag, detail.RegionSizeBytes)
+//   - HookPosL2Invalidation → OnL2Invalidation(detail.IsWriteInv)
 func (a *L2Adapter) Func(ctx sim.HookCtx) {
 	switch ctx.Pos {
 	case writebackcoh.HookPosL2Access:
@@ -97,5 +107,8 @@ func (a *L2Adapter) Func(ctx sim.HookCtx) {
 	case writebackcoh.HookPosRegionFetch:
 		d := ctx.Detail.(writebackcoh.RegionFetchDetail)
 		a.OnRegionFetch(d.RegionTag, d.RegionSizeBytes)
+	case writebackcoh.HookPosL2Invalidation:
+		d := ctx.Detail.(writebackcoh.L2InvalidationDetail)
+		a.OnL2Invalidation(d.IsWriteInv)
 	}
 }
