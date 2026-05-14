@@ -49,5 +49,10 @@ results/m1/m1
 # pytest cache
 .pytest_cache/
 
-# DNN training datasets (regenerable via download scripts)
-amd/benchmarks/dnn/dataset/
+# DNN training datasets (regenerable via download scripts);
+# keep .go package sources and download.sh, ignore data files.
+amd/benchmarks/dnn/dataset/**
+!amd/benchmarks/dnn/dataset/
+!amd/benchmarks/dnn/dataset/**/
+!amd/benchmarks/dnn/dataset/**/*.go
+!amd/benchmarks/dnn/dataset/**/download.sh
