@@ -34,6 +34,12 @@ type Builder struct {
 	sdByteSize            uint64
 	sdDisableRSB          bool
 	sdDisableCBF          bool
+	sdDisableDemoteLock   bool
+	sdPromoteRelaxed      bool
+	sdUseRsbHintAlloc     bool
+	sdRecordSilentEvict   bool
+	mgdRegionSize         uint64
+	recHalfSet            bool
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
@@ -54,6 +60,7 @@ func MakeBuilder() Builder {
 		sdNumBanks:         5,
 		sdLog2NumSubEntry:  2,
 		sdByteSize:         512 * mem.KB,
+		mgdRegionSize:      1024,
 	}
 }
 
@@ -127,6 +134,38 @@ func (b Builder) WithSDDisableRSB(v bool) Builder {
 
 func (b Builder) WithSDDisableCBF(v bool) Builder {
 	b.sdDisableCBF = v
+	return b
+}
+
+func (b Builder) WithSDDisableDemoteLock(v bool) Builder {
+	b.sdDisableDemoteLock = v
+	return b
+}
+
+func (b Builder) WithSDPromoteRelaxed(v bool) Builder {
+	b.sdPromoteRelaxed = v
+	return b
+}
+
+func (b Builder) WithSDUseRsbHintAlloc(v bool) Builder {
+	b.sdUseRsbHintAlloc = v
+	return b
+}
+
+func (b Builder) WithSDRecordSilentEvict(v bool) Builder {
+	b.sdRecordSilentEvict = v
+	return b
+}
+
+func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
+	b.mgdRegionSize = bytes
+	return b
+}
+
+// WithRECHalfSet halves REC's number of sets to reflect REC's 2x entry-size
+// hardware overhead.
+func (b Builder) WithRECHalfSet(v bool) Builder {
+	b.recHalfSet = v
 	return b
 }
 
@@ -221,8 +260,12 @@ func (b *Builder) createGPUBuilder(
 		WithNumCUPerShaderArray(b.numCUPerSA).
 		WithNumShaderArray(b.numSAPerGPU).
 		WithNumMemoryBank(16).
-		// WithLog2MemoryBankInterleavingSize(7).
-		WithLog2MemoryBankInterleavingSize(b.log2CacheBlockSize + b.log2CoherenceUnitSize + 1).
+		// Decouple bank interleaving from coherence-unit-size: keep
+		// 128B (= 2 cache lines) regardless of CD so the L2/DRAM bank
+		// striping doesn't move with coherence granularity. The
+		// commented form below tied them together (2^(6+CD+1) bytes).
+		WithLog2MemoryBankInterleavingSize(7).
+		// WithLog2MemoryBankInterleavingSize(b.log2CacheBlockSize + b.log2CoherenceUnitSize + 1).
 		WithLog2PageSize(b.log2PageSize).
 		WithLog2CacheLineSize(b.log2CacheBlockSize).
 		WithLog2CoherenceUnitSize(b.log2CoherenceUnitSize).
@@ -235,7 +278,13 @@ func (b *Builder) createGPUBuilder(
 		WithSDNumBanks(b.sdNumBanks).
 		WithSDLog2NumSubEntry(b.sdLog2NumSubEntry).
 		WithSDDisableRSB(b.sdDisableRSB).
-		WithSDDisableCBF(b.sdDisableCBF)
+		WithSDDisableCBF(b.sdDisableCBF).
+		WithSDDisableDemoteLock(b.sdDisableDemoteLock).
+		WithSDPromoteRelaxed(b.sdPromoteRelaxed).
+		WithSDUseRsbHintAlloc(b.sdUseRsbHintAlloc).
+		WithSDRecordSilentEvict(b.sdRecordSilentEvict).
+		WithMGDRegionSize(b.mgdRegionSize).
+		WithRECHalfSet(b.recHalfSet)
 	fmt.Printf("[r9nano Builder]\tCreating GPU Builder with log2CacheLineSize %d, log2PageSize %d coherenceDirectory %d.\n",
 		b.log2CacheBlockSize, b.log2PageSize, b.coherenceDirectory)
 

@@ -160,6 +160,10 @@ func (d *Driver) enqueueLaunchUnifiedKernel(
 	for i, gpuID := range dev.UnifiedGPUIDs {
 		queueArray[i] = queue
 		queueArray[i].Context.currentGPUID = gpuID
+		// Guard against kernels that write past the end of unified data
+		// buffers. Without this, an OOB write can land in the kernel-text
+		// page allocated immediately after the data buffer in VA space.
+		_ = d.AllocateMemory(queue.Context, 1024*1024)
 		dCoData, dKernArgData, dPacket := d.allocateGPUMemory(queue.Context, co)
 
 		packet := d.createAQLPacket(gridSize, wgSize, dCoData, dKernArgData)

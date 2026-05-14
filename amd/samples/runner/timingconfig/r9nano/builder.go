@@ -5,6 +5,7 @@ package r9nano
 import (
 	"fmt"
 
+	"github.com/sarchlab/akita/v4/mem/cache/MGD"
 	"github.com/sarchlab/akita/v4/mem/cache/REC"
 	"github.com/sarchlab/akita/v4/mem/cache/largeblkcache"
 	"github.com/sarchlab/akita/v4/mem/cache/optdirectory"
@@ -48,6 +49,12 @@ type Builder struct {
 	sdLog2NumSubEntry              uint64
 	sdDisableRSB                   bool
 	sdDisableCBF                   bool
+	sdDisableDemoteLock            bool
+	sdPromoteRelaxed               bool
+	sdUseRsbHintAlloc              bool
+	sdRecordSilentEvict            bool
+	mgdRegionSize                  uint64
+	recHalfSet                     bool
 	memAddrOffset                  uint64
 	dramSize                       uint64
 	globalStorage                  *mem.Storage
@@ -65,9 +72,10 @@ type Builder struct {
 	dmaEngine  *cp.DMAEngine
 	sas        []*sim.Domain
 	// cohDir     *coherence.Comp
-	cohDir   *optdirectory.Comp   // b.coherenceDirectory == 0 || 1
+	cohDir   *optdirectory.Comp   // b.coherenceDirectory == 0 || 1 || 4
 	superDir *superdirectory.Comp // b.coherenceDirectory == 2
-	recDir   *REC.Comp
+	recDir   *REC.Comp            // b.coherenceDirectory == 3
+	mgdDir   *MGD.Comp            // b.coherenceDirectory == 5
 	// l2Caches []*writeback.Comp
 	l2Caches       []*writebackcoh.Comp  // b.coherenceDirectory == 0 || 2 || 3 || 4
 	largeBlkCaches []*largeblkcache.Comp // b.coherenceDirectory == 1
@@ -105,6 +113,7 @@ func MakeBuilder() Builder {
 		cohDirSize:                     512 * mem.KB,
 		sdNumBanks:                     5,
 		sdLog2NumSubEntry:              2,
+		mgdRegionSize:                  1024,
 		memAddrOffset:                  0,
 		dramSize:                       4 * mem.GB,
 		// l2CacheSize:                    2 * mem.MB,
@@ -259,6 +268,38 @@ func (b Builder) WithSDDisableRSB(v bool) Builder {
 
 func (b Builder) WithSDDisableCBF(v bool) Builder {
 	b.sdDisableCBF = v
+	return b
+}
+
+func (b Builder) WithSDDisableDemoteLock(v bool) Builder {
+	b.sdDisableDemoteLock = v
+	return b
+}
+
+func (b Builder) WithSDPromoteRelaxed(v bool) Builder {
+	b.sdPromoteRelaxed = v
+	return b
+}
+
+func (b Builder) WithSDUseRsbHintAlloc(v bool) Builder {
+	b.sdUseRsbHintAlloc = v
+	return b
+}
+
+func (b Builder) WithSDRecordSilentEvict(v bool) Builder {
+	b.sdRecordSilentEvict = v
+	return b
+}
+
+func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
+	b.mgdRegionSize = bytes
+	return b
+}
+
+// WithRECHalfSet halves REC's number of sets to reflect REC's 2x entry-size
+// hardware overhead.
+func (b Builder) WithRECHalfSet(v bool) Builder {
+	b.recHalfSet = v
 	return b
 }
 
@@ -433,6 +474,11 @@ func (b *Builder) connectL1ToCohDir() {
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 
+	} else if b.coherenceDirectory == 5 { // MGD
+		l1ToCohDir.PlugIn(b.mgdDir.GetPortByName("Top"))
+		RDMAToCohDir.PlugIn(b.mgdDir.GetPortByName("RDMA"))
+		RDMAToCohDirForInv.PlugIn(b.mgdDir.GetPortByName("RDMAInv"))
+
 	}
 	// b.rdmaEngine.SetLocalModuleFinder(b.l1AddressMapper)
 	b.rdmaEngine.SetLocalModuleFinder(b.rdmaLowModuleFinder)
@@ -464,6 +510,9 @@ func (b *Builder) connectL1ToCohDir() {
 	} else if b.coherenceDirectory == 4 { // HMG
 		b.cohDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.cohDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
+	} else if b.coherenceDirectory == 5 { // MGD
+		b.mgdDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
+		b.mgdDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
 	}
 }
 
@@ -509,6 +558,17 @@ func (b *Builder) connectCohDirToL2() {
 		}
 		b.superDir.SetAddressToPortMapper(b.cohDirAddressMapper)
 		b.superDir.SetAddressToPortMapperForRemoteReq(b.cohDirAddressMapperForRemoteReq)
+
+	} else if b.coherenceDirectory == 5 { // MGD
+		CohDirToL2Conn.PlugIn(b.mgdDir.GetPortByName("Bottom"))
+		CohDirToL2ConnForRemote.PlugIn(b.mgdDir.GetPortByName("RemoteBottom"))
+
+		for _, l2 := range b.l2Caches {
+			CohDirToL2Conn.PlugIn(l2.GetPortByName("Top"))
+			CohDirToL2ConnForRemote.PlugIn(l2.GetPortByName("RemoteTop"))
+		}
+		b.mgdDir.SetAddressToPortMapper(b.cohDirAddressMapper)
+		b.mgdDir.SetAddressToPortMapperForRemoteReq(b.cohDirAddressMapperForRemoteReq)
 
 	} else if b.coherenceDirectory == 3 { // REC
 		CohDirToL2Conn.PlugIn(b.recDir.GetPortByName("Bottom"))
@@ -591,6 +651,8 @@ func (b *Builder) connectL2AndDRAM() {
 		b.recDir.SetL2AddressToPortMapper(mapperForDir)
 	} else if b.coherenceDirectory == 4 { // HMG
 		b.cohDir.SetL2AddressToPortMapper(mapperForDir)
+	} else if b.coherenceDirectory == 5 { // MGD
+		b.mgdDir.SetL2AddressToPortMapper(mapperForDir)
 	}
 
 	for _, dram := range b.drams {
@@ -751,6 +813,8 @@ func (b *Builder) connectCPWithCohDir() {
 		cohDirPort = b.recDir.GetPortByName("Control")
 	} else if b.coherenceDirectory == 4 { // HMG
 		cohDirPort = b.cohDir.GetPortByName("Control")
+	} else if b.coherenceDirectory == 5 { // MGD
+		cohDirPort = b.mgdDir.GetPortByName("Control")
 	}
 
 	b.cp.CohDirectory = cohDirPort
@@ -856,6 +920,13 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithDirectoryLatency(1).
+			// Phase 2 inv-emit budget: at most 2 InvReqs per output
+			// channel per cycle (RDMA-bound + local-L2-bound counted
+			// separately). Models the directory controller's
+			// outgoing-channel serialization that the unbounded
+			// "drain until port full" baseline missed. Same value
+			// applied to SD/REC for fair comparison.
+			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -894,6 +965,8 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithDirectoryLatency(1).
+			// Phase 2 inv-emit budget — same value as other variants.
+			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -932,10 +1005,17 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
 			WithDirectoryLatency(1).
+			// Phase 2 inv-emit budget — same value as CD/REC for fair
+			// cross-variant comparison.
+			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			WithFetchSingleCacheLine(true).
 			WithDisableRSB(b.sdDisableRSB).
 			WithDisableCBF(b.sdDisableCBF).
+			WithDisableDemoteLock(b.sdDisableDemoteLock).
+			WithPromoteRelaxed(b.sdPromoteRelaxed).
+			WithUseRsbHintAlloc(b.sdUseRsbHintAlloc).
+			WithRecordSilentEvict(b.sdRecordSilentEvict).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.SuperDir", b.name))
@@ -971,15 +1051,57 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
 			WithDirectoryLatency(1).
+			// Phase 2 inv-emit budget — same value as CD/SD for fair
+			// cross-variant comparison.
+			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			// WithIdealDirectory(b.idealDirectory).
+			WithHalfSet(b.recHalfSet).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.RECDir", b.name))
 
 		b.simulation.RegisterComponent(dir)
 		b.recDir = dir
+		b.l1AddressMapper.LowModules = append(
+			b.l1AddressMapper.LowModules,
+			dir.GetPortByName("Top").AsRemote(),
+		)
+		b.rdmaLowModuleFinder.LowModules = append(
+			b.rdmaLowModuleFinder.LowModules,
+			dir.GetPortByName("RDMA").AsRemote(),
+		)
+		b.rdmaInvLowModuleFinder.LowModules = append(
+			b.rdmaInvLowModuleFinder.LowModules,
+			dir.GetPortByName("RDMAInv").AsRemote(),
+		)
+
+	} else if b.coherenceDirectory == 5 { // MGD
+		byteSize := b.cohDirSize
+		dir := MGD.MakeBuilder().
+			WithEngine(b.simulation.GetEngine()).
+			WithFreq(b.freq).
+			WithDeviceID(int(b.gpuID)).
+			WithLog2BlockSize(b.log2CacheLineSize).
+			WithLog2PageSize(b.log2PageSize).
+			WithRegionSize(b.mgdRegionSize).
+			WithWayAssociativity(8).
+			WithByteSize(byteSize).
+			WithNumMSHREntry(64).
+			WithNumReqPerCycle(16).
+			WithBankLatency(1).
+			WithDirectoryLatency(1).
+			WithAddressMapperType("interleaved").
+			WithFetchSingleCacheLine(true).
+			WithDisableRSB(b.sdDisableRSB).
+			WithDisableCBF(b.sdDisableCBF).
+			WithReadMask(b.readMask).
+			WithDirtyMask(b.dirtyMask).
+			Build(fmt.Sprintf("%s.MGDDir", b.name))
+
+		b.simulation.RegisterComponent(dir)
+		b.mgdDir = dir
 		b.l1AddressMapper.LowModules = append(
 			b.l1AddressMapper.LowModules,
 			dir.GetPortByName("Top").AsRemote(),
@@ -1009,6 +1131,10 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithDirectoryLatency(1).
+			// Phase 2 inv-emit budget — same value as CD/SD/REC for
+			// fair comparison. Previously omitted from this HMG branch
+			// only, causing HMG to behave like Phase-2-disabled CD_2.
+			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -1096,7 +1222,36 @@ func (b *Builder) buildL2Caches() {
 			WithWayAssociativity(16).
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
-			WithNumReqPerCycle(16).
+			// L2 commits-per-cycle: reduced from 16 to 4 to bring the
+			// directory/bank arbitration closer to a real L2's port
+			// count. With the unified-budget commit-only loop in
+			// directorystage.processTransaction, this is the actual
+			// max number of (read|write|inv) commits per cycle that
+			// share remote+local arbitration. 2 was too tight for
+			// SuperDirectory variant (deadlock under PTE invalidation
+			// pressure during page migration); 4 leaves enough
+			// headroom while still significantly below the original 16.
+			// CD-only experiment: temporarily reduced to 2 to test if
+			// inv-message processing becomes the bottleneck (stencil2d
+			// CD_0..8 sweep with iter=10).
+			WithNumReqPerCycle(2).
+			// Shared-pipeline inv-cost model: read/write/inv all
+			// traverse the same 2-stage directory pipeline (no
+			// dedicated snoop pipeline). This matches the more
+			// common real-hardware design where snoop processing
+			// shares the L2 tag-array ports with regular accesses.
+			//   directory stage (all 3 op types) = 2 cycles
+			//   data bank access (read/write)    = 10 cycles
+			// Inv still pays a higher commit cost via the existing
+			// invCostInSlots=2 weight in processTransaction (1 inv
+			// commit blocks 2 of 2 commit slots/cycle), capturing
+			// state-bit write contention. wasted invs pay the same
+			// 2-cycle directory traversal as productive ones (hit/
+			// miss agnostic floor). CD/SD/REC variants share this
+			// configuration via writebackcoh.
+			WithDirectoryLatency(2).
+			WithSnoopLatency(0).
+			WithBankLatency(10).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask)
 

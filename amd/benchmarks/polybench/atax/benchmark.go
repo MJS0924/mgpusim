@@ -16,19 +16,25 @@ import (
 
 // Kernel1Args list first set of kernel arguments
 type Kernel1Args struct {
-	A   driver.Ptr
-	X   driver.Ptr
-	Tmp driver.Ptr
-	NX  int32
-	NY  int32
+	A                   driver.Ptr
+	X                   driver.Ptr
+	Tmp                 driver.Ptr
+	NX                  int32
+	NY                  int32
+	HiddenGlobalOffsetX int64
+	HiddenGlobalOffsetY int64
+	HiddenGlobalOffsetZ int64
 }
 
 // Kernel2Args list second set of kernel arguments
 type Kernel2Args struct {
-	A      driver.Ptr
-	Y      driver.Ptr
-	Tmp    driver.Ptr
-	NX, NY int32
+	A                   driver.Ptr
+	Y                   driver.Ptr
+	Tmp                 driver.Ptr
+	NX, NY              int32
+	HiddenGlobalOffsetX int64
+	HiddenGlobalOffsetY int64
+	HiddenGlobalOffsetZ int64
 }
 
 // Benchmark defines a benchmark
@@ -135,31 +141,66 @@ func (b *Benchmark) exec() {
 	b.driver.MemCopyH2D(b.context, b.dX, b.x)
 
 	localSize := [3]uint16{256, 1, 1}
-	globalSizeX := uint32(((b.NX-1)/256 + 1) * 256)
-	globalSize := [3]uint32{globalSizeX, 1, 1}
+	nGPU := len(b.gpus)
+	// 각 GPU가 동일한 work-item을 받도록 (localSize × nGPU) 단위로 정렬
+	alignment := 256 * nGPU
 
-	kernel1Arg := Kernel1Args{
-		A:   b.dA,
-		X:   b.dX,
-		Tmp: b.dTmp,
-		NX:  int32(b.NX),
-		NY:  int32(b.NY),
+	// ===== Kernel1: NX 차원에서 병렬 (tmp[i] = A[i,*]·x) =====
+	totalNX := ((b.NX-1)/alignment + 1) * alignment
+	perGPUNX := totalNX / nGPU
+
+	for i, gpu := range b.gpus {
+		b.driver.SelectGPU(b.context, gpu)
+
+		kernel1Arg := Kernel1Args{
+			A:                   b.dA,
+			X:                   b.dX,
+			Tmp:                 b.dTmp,
+			NX:                  int32(b.NX),
+			NY:                  int32(b.NY),
+			HiddenGlobalOffsetX: int64(i * perGPUNX),
+		}
+		b.driver.EnqueueLaunchKernel(
+			b.queues[i],
+			b.kernel1,
+			[3]uint32{uint32(perGPUNX), 1, 1},
+			localSize,
+			&kernel1Arg,
+		)
 	}
-	b.driver.LaunchKernel(b.context, b.kernel1,
-		globalSize, localSize, &kernel1Arg)
 
-	globalSizeX = uint32(((b.NY-1)/256 + 1) * 256)
-	globalSize = [3]uint32{globalSizeX, 1, 1}
-
-	kernel2Arg := Kernel2Args{
-		A:   b.dA,
-		Y:   b.dY,
-		Tmp: b.dTmp,
-		NX:  int32(b.NX),
-		NY:  int32(b.NY),
+	// kernel2 가 tmp 를 읽기 전에 kernel1 결과 동기화 필수
+	for _, q := range b.queues {
+		b.driver.DrainCommandQueue(q)
 	}
-	b.driver.LaunchKernel(b.context, b.kernel2,
-		globalSize, localSize, &kernel2Arg)
+
+	// ===== Kernel2: NY 차원에서 병렬 (y[j] = A[*,j]ᵀ·tmp) =====
+	totalNY := ((b.NY-1)/alignment + 1) * alignment
+	perGPUNY := totalNY / nGPU
+
+	for i, gpu := range b.gpus {
+		b.driver.SelectGPU(b.context, gpu)
+
+		kernel2Arg := Kernel2Args{
+			A:                   b.dA,
+			Y:                   b.dY,
+			Tmp:                 b.dTmp,
+			NX:                  int32(b.NX),
+			NY:                  int32(b.NY),
+			HiddenGlobalOffsetX: int64(i * perGPUNY),
+		}
+		b.driver.EnqueueLaunchKernel(
+			b.queues[i],
+			b.kernel2,
+			[3]uint32{uint32(perGPUNY), 1, 1},
+			localSize,
+			&kernel2Arg,
+		)
+	}
+
+	for _, q := range b.queues {
+		b.driver.DrainCommandQueue(q)
+	}
 
 	b.driver.MemCopyD2H(b.context, b.yOutput, b.dY)
 }

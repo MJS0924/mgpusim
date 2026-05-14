@@ -54,6 +54,12 @@ type Runner struct {
 	sdByteSize            uint64
 	sdDisableRSB          bool
 	sdDisableCBF          bool
+	sdDisableDemoteLock   bool
+	sdPromoteRelaxed      bool
+	sdUseRsbHintAlloc     bool
+	sdRecordSilentEvict   bool
+	mgdRegionSize         uint64
+	recHalfSet            bool
 }
 
 // Init initializes the platform simulate
@@ -76,7 +82,8 @@ func (r *Runner) Init() *Runner {
 }
 
 func (r *Runner) initSimulation() {
-	builder := simulation.MakeBuilder()
+	builder := simulation.MakeBuilder().
+		WithTraceVisEnabled(*visTracing)
 
 	if *parallelFlag {
 		builder = builder.WithParallelEngine()
@@ -115,7 +122,13 @@ func (r *Runner) buildTimingPlatform() {
 		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).
 		WithSDByteSize(r.sdByteSize).
 		WithSDDisableRSB(r.sdDisableRSB).
-		WithSDDisableCBF(r.sdDisableCBF)
+		WithSDDisableCBF(r.sdDisableCBF).
+		WithSDDisableDemoteLock(r.sdDisableDemoteLock).
+		WithSDPromoteRelaxed(r.sdPromoteRelaxed).
+		WithSDUseRsbHintAlloc(r.sdUseRsbHintAlloc).
+		WithSDRecordSilentEvict(r.sdRecordSilentEvict).
+		WithMGDRegionSize(r.mgdRegionSize).
+		WithRECHalfSet(r.recHalfSet)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()

@@ -8,7 +8,6 @@
 *.exe
 *.out
 debug
-*.csv
 *.sqlite3-journal
 *.sqlite3
 *~
@@ -34,3 +33,21 @@ samples/**/metrics.csv
 test
 # Generated mocks (created via go:generate mockgen)
 **/mock_*_test.go
+
+# Compiled Go binaries (regenerable via `go build`)
+/m1
+/matrixmultiplication
+/pagerank
+amd/samples/im2col/im2col_fixed
+amd/samples/im2col/im2col_fixed2
+amd/samples/im2col/im2col_missD
+benchmark/b35_overhead/b35_overhead
+benchmark/b36_overhead/b36_overhead
+results/b35_overhead
+results/m1/m1
+
+# pytest cache
+.pytest_cache/
+
+# DNN training datasets (regenerable via download scripts)
+amd/benchmarks/dnn/dataset/

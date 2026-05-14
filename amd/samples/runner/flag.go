@@ -97,6 +97,20 @@ var sdDisableRSB = flag.Bool("sd-disable-rsb", false,
 	"SuperDirectory: disable Region Size Buffer")
 var sdDisableCBF = flag.Bool("sd-disable-cbf", false,
 	"SuperDirectory: disable Counting Bloom Filter")
+var sdDisableDemoteLock = flag.Bool("sd-disable-demote-lock", false,
+	"SuperDirectory: disable the demote lock; every demote trigger goes down the cascading path")
+var sdPromoteRelaxed = flag.Bool("sd-promote-relaxed", false,
+	"SuperDirectory: use relaxed promotion eligibility (any valid sub-entry, sharer = union). Default false — relaxed promotes partial-valid parents, leaving orphan entries at finer banks that cause Hit-about-demotion warnings.")
+var sdUseRsbHintAlloc = flag.Bool("sd-use-rsb-hint-alloc", true,
+	"SuperDirectory: doWriteMiss honors RSB hint when allocating new entries (instead of always finest). Default true (S4 fix).")
+var sdRecordSilentEvict = flag.Bool("sd-rsb-record-evict", true,
+	"SuperDirectory: every non-finest eviction (write-miss/promote/demote) writes the victim bank into RSB, not just eviction-with-sharers. Default true (S5 fix).")
+var mgdRegionSize = flag.Uint64("mgd-region-size", 1024,
+	"MGD: coarse-grain region size in bytes "+
+		"(1024=DGD-1K, 4096=DGD-4K, 8192=DGD-8K). Power of two, >= block size.")
+var recHalfSetFlag = flag.Bool("rec-half-set", false,
+	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
+		"2x entry-size hardware overhead.")
 
 var perWindowSnapshotFlag = flag.Bool("per-window-snapshot", false,
 	"Capture per-window cumulative metrics at instruction boundaries (default OFF).")
@@ -104,6 +118,16 @@ var windowInstructionsFlag = flag.Uint64("window-instructions", 10_000_000,
 	"Number of retired instructions per snapshot window (used with -per-window-snapshot).")
 var perWindowOutputFlag = flag.String("per-window-output", "",
 	"Output CSV path for per-window metrics. Defaults to <metric-file-name>_per_window.csv in CWD.")
+
+// Sharer heatmap (cacheline × time visualization). Off by default. When on,
+// the optdirectory dumps a RLE-compressed sharer-set snapshot of every
+// accessed block at every instruction-window boundary. Implies
+// -per-window-snapshot (otherwise there is no window-tick to hook into).
+var sharerHeatmapFlag = flag.Bool("coalescability-heatmap", false,
+	"Dump per-window sharer heatmap (RLE) for cacheline × time visualization. "+
+		"Implies -per-window-snapshot.")
+var sharerHeatmapDirFlag = flag.String("coalescability-heatmap-dir", "",
+	"Output directory for sharer heatmap CSVs. Defaults to ./sharer_heatmap.")
 
 // parseFlag applies the runner flag to runner object
 func (r *Runner) parseFlag() *Runner {
@@ -172,6 +196,8 @@ func (r *Runner) parseGPUFlag() {
 		r.coherenceDirectory = 3
 	case "HMG":
 		r.coherenceDirectory = 4
+	case "MGD":
+		r.coherenceDirectory = 5
 	}
 
 	r.log2CoherenceUnitSize = *coherenceUnitSize
@@ -185,6 +211,12 @@ func (r *Runner) parseGPUFlag() {
 	r.sdByteSize = *sdByteSize
 	r.sdDisableRSB = *sdDisableRSB
 	r.sdDisableCBF = *sdDisableCBF
+	r.sdDisableDemoteLock = *sdDisableDemoteLock
+	r.sdPromoteRelaxed = *sdPromoteRelaxed
+	r.sdUseRsbHintAlloc = *sdUseRsbHintAlloc
+	r.sdRecordSilentEvict = *sdRecordSilentEvict
+	r.mgdRegionSize = *mgdRegionSize
+	r.recHalfSet = *recHalfSetFlag
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

@@ -1,0 +1,3 @@
+sim_time,gpu_id,kernel_id,write_event_count,sharer_set_churn_count,false_invalidation_count
+0.012945084,2,1,2326,1438,0
+0.016750221,2,2,324,324,0

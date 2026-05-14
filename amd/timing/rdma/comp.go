@@ -188,6 +188,7 @@ func (c *Comp) Tick() bool {
 	}
 
 	c.tickReturn = madeProgress
+
 	return madeProgress
 }
 
@@ -415,12 +416,8 @@ func (c *Comp) processRspFromL2(
 		rsp.GetRspTo(), c.transactionsFromOutside)
 	if transactionIndex == -1 {
 		c.RDMADataInside.RetrieveIncoming()
-
 		c.returnFalse1 = "[processRspFromL2] Cannot find transaction"
-		// return false
 		return true
-
-		// fmt.Printf("[%s]\t４. Cannot find transaction for DataReadyRsp with RspTo %s, Addr %x\n", c.Name(), rsp.GetRspTo(), rsp.GetOrigin().GetAddress())
 	}
 	trans := &(c.transactionsFromOutside[transactionIndex])
 
@@ -533,13 +530,6 @@ func (c *Comp) processRspFromRDMARequestOutside(
 		rspToInside = c.cloneRsp(rsp, "", rsp.GetOrigin().GetAddress())
 		rspToInside.Meta().Src = c.RDMARequestInside.AsRemote()
 		rspToInside.Meta().Dst = c.localModuleBottoms.Find(rsp.GetOrigin().GetAddress())
-
-		// fmt.Printf("[RDMA %d]\tSend prefetched data %x to %s\n",
-		// 	c.deviceID, rsp.GetOrigin().GetAddress(), rspToInside.Meta().Dst)
-
-		// c.RDMARequestOutside.RetrieveIncoming()
-		// fmt.Printf("[%s]\t4. Cannot find transaction for DataReadyRsp with RspTo %s\n", c.Name(), rsp.GetRspTo())
-		// return false
 	} else {
 		trans = c.transactionsFromInside[transactionIndex]
 		rspToInside = c.cloneRsp(rsp, trans.fromInside.Meta().ID, trans.fromInside.(mem.AccessReq).GetAddress())

@@ -82,6 +82,26 @@ type trafficTracer struct {
 	tracer *tracing.StepCountTracer
 }
 
+// eventCountsProvider is satisfied by Comp types that count events in-memory
+// (rdma.Comp, writebackcoh.Comp, superdirectory.Comp). When a component
+// implements it, report.go reads counts directly instead of querying the
+// trace-DB-backed StepCountTracer — this lets the simulator skip
+// tracing.AddTaskStep entirely for high-frequency events and keeps
+// akita_sim_*.sqlite small.
+type eventCountsProvider interface {
+	EventCounts() map[string]uint64
+}
+
+// stepCount returns the count for `name`, preferring the in-memory
+// EventCounts map when the comp exposes it, and falling back to the
+// trace-DB-backed StepCountTracer otherwise.
+func stepCount(comp tracing.NamedHookable, t *tracing.StepCountTracer, name string) uint64 {
+	if p, ok := comp.(eventCountsProvider); ok {
+		return p.EventCounts()[name]
+	}
+	return t.GetStepCount(name)
+}
+
 // entryUtilProvider is satisfied by both REC.Comp and superdirectory.Comp,
 // which accumulate eviction-time sub-entry utilization samples internally.
 type entryUtilProvider interface {
@@ -694,7 +714,7 @@ func (r *reporter) reportCachelineUsage() {
 		n := 1 << (r.log2BlockSize - 6)
 		for i := 0; i <= n; i++ {
 			what := fmt.Sprintf("Usage: %d/%d", i, n)
-			count := tracer.tracer.GetStepCount(what)
+			count := stepCount(tracer.cache, tracer.tracer, what)
 
 			if count == 0 {
 				continue
@@ -718,7 +738,7 @@ func (r *reporter) reportCachelineUsage() {
 		}
 
 		for _, s := range what {
-			count := tracer.tracer.GetStepCount(s)
+			count := stepCount(tracer.cache, tracer.tracer, s)
 			if count == 0 {
 				continue
 			}
@@ -735,19 +755,19 @@ func (r *reporter) reportCachelineUsage() {
 
 func (r *reporter) reportCacheEvictions() {
 	for _, tracer := range r.cacheHitRateTracers {
-		evb := tracer.tracer.GetStepCount("EvictValidBlock")
-		eib := tracer.tracer.GetStepCount("EvictInvalidBlock")
-		ivbWrite := tracer.tracer.GetStepCount("InvalidateValidBlock-Write")
-		iibWrite := tracer.tracer.GetStepCount("InvalidateInvalidBlock-Write")
-		ivbEvict := tracer.tracer.GetStepCount("InvalidateValidBlock-Evict")
-		iibEvict := tracer.tracer.GetStepCount("InvalidateInvalidBlock-Evict")
+		evb := stepCount(tracer.cache, tracer.tracer, "EvictValidBlock")
+		eib := stepCount(tracer.cache, tracer.tracer, "EvictInvalidBlock")
+		ivbWrite := stepCount(tracer.cache, tracer.tracer, "InvalidateValidBlock-Write")
+		iibWrite := stepCount(tracer.cache, tracer.tracer, "InvalidateInvalidBlock-Write")
+		ivbEvict := stepCount(tracer.cache, tracer.tracer, "InvalidateValidBlock-Evict")
+		iibEvict := stepCount(tracer.cache, tracer.tracer, "InvalidateInvalidBlock-Evict")
 		ivb := ivbWrite + ivbEvict
 		iib := iibWrite + iibEvict
-		prfSt := tracer.tracer.GetStepCount("PrefetchStart")
-		prf := tracer.tracer.GetStepCount("Prefetch")
-		evtPrf := tracer.tracer.GetStepCount("EvictAndPrefetch")
-		prfDscHit := tracer.tracer.GetStepCount("PrefetchDiscard - Hit")
-		prfDscBsy := tracer.tracer.GetStepCount("PrefetchDiscard - Busy")
+		prfSt := stepCount(tracer.cache, tracer.tracer, "PrefetchStart")
+		prf := stepCount(tracer.cache, tracer.tracer, "Prefetch")
+		evtPrf := stepCount(tracer.cache, tracer.tracer, "EvictAndPrefetch")
+		prfDscHit := stepCount(tracer.cache, tracer.tracer, "PrefetchDiscard - Hit")
+		prfDscBsy := stepCount(tracer.cache, tracer.tracer, "PrefetchDiscard - Busy")
 
 		total := evb + eib + ivb + iib + prf + evtPrf + prfDscHit + prfDscBsy
 		if total == 0 {
@@ -845,20 +865,20 @@ func (r *reporter) reportCacheEvictions() {
 
 func (r *reporter) reportCacheHitRate() {
 	for _, tracer := range r.cacheHitRateTracers {
-		readHit := tracer.tracer.GetStepCount("read-hit")
-		readMiss := tracer.tracer.GetStepCount("read-miss")
-		readMSHRHit := tracer.tracer.GetStepCount("read-mshr-hit")
-		remoteReadHit := tracer.tracer.GetStepCount("remote-read-hit")
-		remoteReadMiss := tracer.tracer.GetStepCount("remote-read-miss")
-		remoteReadMSHRHit := tracer.tracer.GetStepCount("remote-read-mshr-hit")
-		writeHit := tracer.tracer.GetStepCount("write-hit")
-		writeMiss := tracer.tracer.GetStepCount("write-miss")
-		writeMSHRHit := tracer.tracer.GetStepCount("write-mshr-hit")
-		remoteWriteHit := tracer.tracer.GetStepCount("remote-write-hit")
-		remoteWriteMiss := tracer.tracer.GetStepCount("remote-write-miss")
-		remoteWriteMSHRHit := tracer.tracer.GetStepCount("remote-write-mshr-hit")
-		ToLocal := tracer.tracer.GetStepCount("ToLocal")
-		ToRemote := tracer.tracer.GetStepCount("ToRemote")
+		readHit := stepCount(tracer.cache, tracer.tracer, "read-hit")
+		readMiss := stepCount(tracer.cache, tracer.tracer, "read-miss")
+		readMSHRHit := stepCount(tracer.cache, tracer.tracer, "read-mshr-hit")
+		remoteReadHit := stepCount(tracer.cache, tracer.tracer, "remote-read-hit")
+		remoteReadMiss := stepCount(tracer.cache, tracer.tracer, "remote-read-miss")
+		remoteReadMSHRHit := stepCount(tracer.cache, tracer.tracer, "remote-read-mshr-hit")
+		writeHit := stepCount(tracer.cache, tracer.tracer, "write-hit")
+		writeMiss := stepCount(tracer.cache, tracer.tracer, "write-miss")
+		writeMSHRHit := stepCount(tracer.cache, tracer.tracer, "write-mshr-hit")
+		remoteWriteHit := stepCount(tracer.cache, tracer.tracer, "remote-write-hit")
+		remoteWriteMiss := stepCount(tracer.cache, tracer.tracer, "remote-write-miss")
+		remoteWriteMSHRHit := stepCount(tracer.cache, tracer.tracer, "remote-write-mshr-hit")
+		ToLocal := stepCount(tracer.cache, tracer.tracer, "ToLocal")
+		ToRemote := stepCount(tracer.cache, tracer.tracer, "ToRemote")
 
 		totalTransaction := readHit + readMiss + remoteReadHit + remoteReadMiss + readMSHRHit + remoteReadMSHRHit +
 			writeHit + writeMiss + remoteWriteHit + remoteWriteMiss + writeMSHRHit + remoteWriteMSHRHit +
@@ -956,20 +976,44 @@ func (r *reporter) reportCacheHitRate() {
 			Value:    float64(ToRemote),
 			Unit:     "count",
 		})
+
+		// Method D: read-miss reason breakdown emitted from
+		// writebackcoh.directorystage.emitMissReason. Names:
+		//   read-miss-cold / -capacity / -coh-write / -coh-evict / -other
+		//   remote-read-miss-cold / ...
+		// We unconditionally emit each so 0-valued reasons are explicit.
+		for _, reason := range []string{
+			"cold", "capacity", "coh-write", "coh-evict", "other",
+		} {
+			what := "read-miss-" + reason
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     what,
+				Value:    float64(stepCount(tracer.cache, tracer.tracer, what)),
+				Unit:     "count",
+			})
+			what = "remote-read-miss-" + reason
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     what,
+				Value:    float64(stepCount(tracer.cache, tracer.tracer, what)),
+				Unit:     "count",
+			})
+		}
 	}
 }
 
 func (r *reporter) reportCohDir() {
 	for _, tracer := range r.cohDirtracers {
-		UpdateEntry := tracer.tracer.GetStepCount("UpdateEntry")
-		InvalidateByEviction := tracer.tracer.GetStepCount("InvalidateByEviction")
-		InvalidateByWrite := tracer.tracer.GetStepCount("InvalidateByWrite")
-		InvalidateByPromotion := tracer.tracer.GetStepCount("InvalidateByPromotion")
-		InvalidateByDemotion := tracer.tracer.GetStepCount("InvalidateByDemotion")
-		ToLocalData := tracer.tracer.GetStepCount("ToLocalData")
-		ToRemoteData := tracer.tracer.GetStepCount("ToRemoteData")
-		FromLocal := tracer.tracer.GetStepCount("FromLocal")
-		FromRemote := tracer.tracer.GetStepCount("FromRemote")
+		UpdateEntry := stepCount(tracer.cohDir, tracer.tracer, "UpdateEntry")
+		InvalidateByEviction := stepCount(tracer.cohDir, tracer.tracer, "InvalidateByEviction")
+		InvalidateByWrite := stepCount(tracer.cohDir, tracer.tracer, "InvalidateByWrite")
+		InvalidateByPromotion := stepCount(tracer.cohDir, tracer.tracer, "InvalidateByPromotion")
+		InvalidateByDemotion := stepCount(tracer.cohDir, tracer.tracer, "InvalidateByDemotion")
+		ToLocalData := stepCount(tracer.cohDir, tracer.tracer, "ToLocalData")
+		ToRemoteData := stepCount(tracer.cohDir, tracer.tracer, "ToRemoteData")
+		FromLocal := stepCount(tracer.cohDir, tracer.tracer, "FromLocal")
+		FromRemote := stepCount(tracer.cohDir, tracer.tracer, "FromRemote")
 
 		totalTransaction := UpdateEntry + InvalidateByEviction + InvalidateByWrite +
 			ToLocalData + ToRemoteData + FromLocal + FromRemote
@@ -1048,11 +1092,11 @@ func (r *reporter) reportCohDir() {
 		what3 := "InvalidateByPromotion"
 		what4 := "InvalidateByDemotion"
 		for bankID := 0; bankID < 5; bankID++ {
-			UpdateEntry := tracer.tracer.GetStepCount(what0 + fmt.Sprintf(" - %d", bankID))
-			InvalidateByEviction := tracer.tracer.GetStepCount(what1 + fmt.Sprintf(" - %d", bankID))
-			InvalidateByWrite := tracer.tracer.GetStepCount(what2 + fmt.Sprintf(" - %d", bankID))
-			InvalidateByPromotion := tracer.tracer.GetStepCount(what3 + fmt.Sprintf(" - %d", bankID))
-			InvalidateByDemotion := tracer.tracer.GetStepCount(what4 + fmt.Sprintf(" - %d", bankID))
+			UpdateEntry := stepCount(tracer.cohDir, tracer.tracer, what0+fmt.Sprintf(" - %d", bankID))
+			InvalidateByEviction := stepCount(tracer.cohDir, tracer.tracer, what1+fmt.Sprintf(" - %d", bankID))
+			InvalidateByWrite := stepCount(tracer.cohDir, tracer.tracer, what2+fmt.Sprintf(" - %d", bankID))
+			InvalidateByPromotion := stepCount(tracer.cohDir, tracer.tracer, what3+fmt.Sprintf(" - %d", bankID))
+			InvalidateByDemotion := stepCount(tracer.cohDir, tracer.tracer, what4+fmt.Sprintf(" - %d", bankID))
 
 			totalTransaction := UpdateEntry + InvalidateByEviction + InvalidateByWrite
 
@@ -1119,7 +1163,7 @@ func (r *reporter) reportCohDir() {
 	for _, tracer := range r.cohDirtracers {
 		for n := 1; n <= 10; n++ {
 			what := fmt.Sprintf("BankChecked - %d", n)
-			count := tracer.tracer.GetStepCount(what)
+			count := stepCount(tracer.cohDir, tracer.tracer, what)
 			if count == 0 {
 				continue
 			}
@@ -1136,7 +1180,7 @@ func (r *reporter) reportCohDir() {
 	for _, tracer := range r.cohDirtracers {
 		for n := 1; n <= 10; n++ {
 			what := fmt.Sprintf("GetBankCount - %d", n)
-			count := tracer.tracer.GetStepCount(what)
+			count := stepCount(tracer.cohDir, tracer.tracer, what)
 			if count == 0 {
 				continue
 			}
@@ -1276,15 +1320,23 @@ func (r *reporter) reportDRAMTransactionCount() {
 
 func (r *reporter) reportTraffic() {
 	for _, tracer := range r.trafficTracer {
-		stepNames := tracer.tracer.GetStepNames()
+		if p, ok := tracer.rdma.(eventCountsProvider); ok {
+			for name, count := range p.EventCounts() {
+				r.dataRecorder.InsertData(cohDirTable, metric{
+					Location: tracer.rdma.Name(),
+					What:     name,
+					Value:    float64(count),
+					Unit:     "count",
+				})
+			}
+			continue
+		}
 
-		for _, s := range stepNames {
-			count := tracer.tracer.GetStepCount(s)
-
+		for _, s := range tracer.tracer.GetStepNames() {
 			r.dataRecorder.InsertData(cohDirTable, metric{
 				Location: tracer.rdma.Name(),
 				What:     s,
-				Value:    float64(count),
+				Value:    float64(tracer.tracer.GetStepCount(s)),
 				Unit:     "count",
 			})
 		}
@@ -1369,7 +1421,12 @@ func (r *reporter) reportDirEntryUtil() {
 }
 
 func (r *reporter) injectWindowSnapshotter(s *simulation.Simulation) {
-	if !*perWindowSnapshotFlag {
+	// -coalescability-heatmap implies -per-window-snapshot since it needs
+	// the same window-tick callback. Auto-enable for user convenience.
+	if *sharerHeatmapFlag && !*perWindowSnapshotFlag {
+		fmt.Println("[per-window] auto-enabled by -coalescability-heatmap")
+	}
+	if !*perWindowSnapshotFlag && !*sharerHeatmapFlag {
 		return
 	}
 
@@ -1379,6 +1436,26 @@ func (r *reporter) injectWindowSnapshotter(s *simulation.Simulation) {
 	}
 
 	snap := newWindowSnapshotter(s.GetEngine(), *windowInstructionsFlag, outPath, r)
+
+	// Populate dirUtilProviders BEFORE open() so the CSV header can
+	// include per-provider columns. We collect any component that
+	// implements dirUtilProvider and whose name matches REC/SD — this
+	// covers REC.Comp and superdirectory.Comp; plain CD optdirectory
+	// does not satisfy the interface and is skipped naturally.
+	var providers []dirUtilProvider
+	for _, comp := range s.Components() {
+		if p, ok := comp.(dirUtilProvider); ok {
+			name := p.Name()
+			if strings.Contains(name, "RECDir") || strings.Contains(name, "SuperDir") {
+				providers = append(providers, p)
+			}
+		}
+	}
+	sort.Slice(providers, func(i, j int) bool {
+		return providers[i].Name() < providers[j].Name()
+	})
+	snap.dirUtilProviders = providers
+
 	if err := snap.open(); err != nil {
 		fmt.Printf("[per-window] WARNING: could not open CSV: %v\n", err)
 		return
@@ -1389,8 +1466,45 @@ func (r *reporter) injectWindowSnapshotter(s *simulation.Simulation) {
 			tracing.CollectTrace(comp.(tracing.NamedHookable), snap)
 		}
 	}
+	if len(providers) > 0 {
+		names := make([]string, 0, len(providers))
+		for _, p := range providers {
+			names = append(names, p.Name())
+		}
+		fmt.Printf("[per-window] dir-util providers: %s\n", strings.Join(names, ", "))
+	}
 
 	r.windowSnapshotter = snap
 	fmt.Printf("[per-window] snapshot enabled: window=%d inst, output=%s\n",
 		*windowInstructionsFlag, outPath)
+
+	// Sharer heatmap providers (optdirectory.Comp). Enable per-Comp dump
+	// state and register them with the window snapshotter so each window
+	// boundary triggers a RLE-compressed dump.
+	if *sharerHeatmapFlag {
+		heatmapDir := *sharerHeatmapDirFlag
+		if heatmapDir == "" {
+			heatmapDir = "./sharer_heatmap"
+		}
+		var heatmapProviders []sharerHeatmapProvider
+		for _, comp := range s.Components() {
+			p, ok := comp.(sharerHeatmapProvider)
+			if !ok {
+				continue
+			}
+			// Enable on the underlying optdirectory (idempotent).
+			type heatmapEnabler interface{ SetSharerHeatmapEnabled(bool) }
+			if e, ok := comp.(heatmapEnabler); ok {
+				e.SetSharerHeatmapEnabled(true)
+			}
+			heatmapProviders = append(heatmapProviders, p)
+		}
+		sort.Slice(heatmapProviders, func(i, j int) bool {
+			return heatmapProviders[i].Name() < heatmapProviders[j].Name()
+		})
+		snap.sharerHeatmapProviders = heatmapProviders
+		snap.sharerHeatmapDir = heatmapDir
+		fmt.Printf("[sharer-heatmap] enabled: %d optdirectory provider(s), output=%s\n",
+			len(heatmapProviders), heatmapDir)
+	}
 }

@@ -25,8 +25,15 @@ type CommandQueue struct {
 // of the command queue
 func (q *CommandQueue) Subscribe() *CommandQueueStatusListener {
 	l := &CommandQueueStatusListener{
-		closeSignal: make(chan bool, 0),
-		signal:      make(chan bool, 0),
+		closeSignal: make(chan bool),
+		// Buffered (size 1) so that a Notify issued while the listener is
+		// briefly NOT inside Wait — e.g. between the NumCommand() check and
+		// the next listener.Wait() in DrainCommandQueue's loop — is held
+		// instead of being dropped by Notify's default case. Without the
+		// buffer, a Dequeue+Notify that happens in that race window is lost
+		// and the listener blocks forever once the simulation engine drains
+		// (the last source of further notifications).
+		signal: make(chan bool, 1),
 	}
 
 	q.listenerMutex.Lock()

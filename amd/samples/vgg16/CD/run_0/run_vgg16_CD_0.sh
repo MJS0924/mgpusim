@@ -1,0 +1,18 @@
+#!/bin/bash
+
+cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/CD/run_0
+
+../../vgg16 \
+    -timing \
+    -unified-gpus=1,2,3,4,5 \
+    -use-unified-memory \
+    -coherence-directory=CoherenceDirectory \
+    -log2-page-size=12 \
+    -coherence-unit-size=0 \
+    -epoch=1 -max-batch-per-epoch=2 -batch-size=32 \
+    -report-all \
+    > /root/mgpusim_home/results/CD/rawdata/text/vgg16_CD_0.txt
+
+# 결과 파일(SQLite) 이동 및 이름 변경
+mv akita_sim_*.sqlite3 /root/mgpusim_home/results/CD/rawdata/sql/vgg16_CD_0.sqlite3 2>/dev/null
+
