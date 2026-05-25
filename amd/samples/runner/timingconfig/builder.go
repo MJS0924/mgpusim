@@ -7,7 +7,7 @@ import (
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/mem/vm/mmu"
-	"github.com/sarchlab/akita/v4/noc/networking/pcie"
+	"github.com/sarchlab/akita/v4/noc/networking/nvlink"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/mgpusim/v4/amd/driver"
@@ -34,17 +34,28 @@ type Builder struct {
 	sdByteSize            uint64
 	sdDisableRSB          bool
 	sdDisableCBF          bool
+	sdFE               bool
 	sdDisableDemoteLock   bool
 	sdPromoteRelaxed      bool
 	sdUseRsbHintAlloc     bool
 	sdRecordSilentEvict   bool
+	sdPromoteAtEvict           bool
+	sdPromoteAtEvictBiasVictim bool
+	sdPromoteAtEvictMultiBank  bool
 	mgdRegionSize         uint64
 	recHalfSet            bool
+	invExtraLatency       int
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
 	rdmaAddressMapper *mem.BankedAddressPortMapper
 	idealDirectory    bool
+	cdFifoReplacement bool
+
+	// gpuDeviceIDs are the NVLink-fabric device IDs returned by
+	// nvlink.Connector.PlugInDevice when each GPU is attached. Used to
+	// build the all-pairs NVLink mesh after every GPU has been plugged in.
+	gpuDeviceIDs []int
 }
 
 // MakeBuilder creates a new Builder with default parameters.
@@ -112,6 +123,11 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 	return b
 }
 
+func (b Builder) WithCDFifoReplacement(v bool) Builder {
+	b.cdFifoReplacement = v
+	return b
+}
+
 func (b Builder) WithSDNumBanks(n int) Builder {
 	b.sdNumBanks = n
 	return b
@@ -137,6 +153,11 @@ func (b Builder) WithSDDisableCBF(v bool) Builder {
 	return b
 }
 
+func (b Builder) WithSDFE(v bool) Builder {
+	b.sdFE = v
+	return b
+}
+
 func (b Builder) WithSDDisableDemoteLock(v bool) Builder {
 	b.sdDisableDemoteLock = v
 	return b
@@ -157,6 +178,21 @@ func (b Builder) WithSDRecordSilentEvict(v bool) Builder {
 	return b
 }
 
+func (b Builder) WithSDPromoteAtEvict(v bool) Builder {
+	b.sdPromoteAtEvict = v
+	return b
+}
+
+func (b Builder) WithSDPromoteAtEvictBiasVictim(v bool) Builder {
+	b.sdPromoteAtEvictBiasVictim = v
+	return b
+}
+
+func (b Builder) WithSDPromoteAtEvictMultiBank(v bool) Builder {
+	b.sdPromoteAtEvictMultiBank = v
+	return b
+}
+
 func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
 	b.mgdRegionSize = bytes
 	return b
@@ -166,6 +202,13 @@ func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
 // hardware overhead.
 func (b Builder) WithRECHalfSet(v bool) Builder {
 	b.recHalfSet = v
+	return b
+}
+
+// WithInvExtraLatency forwards extra L2 invalidation-pipeline cycles down
+// to the r9nano GPU builder.
+func (b Builder) WithInvExtraLatency(n int) Builder {
+	b.invExtraLatency = n
 	return b
 }
 
@@ -182,7 +225,7 @@ func (b Builder) Build() *sim.Domain {
 	gpuDriver := b.buildGPUDriver(pageTable)
 
 	gpuBuilder := b.createGPUBuilder(gpuDriver, mmuComp)
-	pcieConnector, rootComplexID :=
+	nvlinkConnector, rootComplexID :=
 		b.createConnection(gpuDriver, mmuComp)
 
 	mmuComp.MigrationServiceProvider = gpuDriver.GetPortByName("MMU").AsRemote()
@@ -191,11 +234,21 @@ func (b Builder) Build() *sim.Domain {
 	pmcAddressTable := b.createPMCPageTable()
 
 	b.createGPUs(
-		rootComplexID, pcieConnector,
+		rootComplexID, nvlinkConnector,
 		gpuBuilder, gpuDriver,
 		pmcAddressTable)
 
-	pcieConnector.EstablishRoute()
+	// Build a full NVLink mesh among all GPUs. REC paper baseline assumes
+	// uniform 300 GB/s bi-directional inter-GPU bandwidth, modelled here as
+	// one direct NVLink between every GPU pair.
+	for i := 0; i < len(b.gpuDeviceIDs); i++ {
+		for j := i + 1; j < len(b.gpuDeviceIDs); j++ {
+			nvlinkConnector.ConnectDevicesWithNVLink(
+				b.gpuDeviceIDs[i], b.gpuDeviceIDs[j], 1)
+		}
+	}
+
+	nvlinkConnector.EstablishRoute()
 
 	return b.platform
 }
@@ -274,17 +327,23 @@ func (b *Builder) createGPUBuilder(
 		WithPageMigrationPolicy(b.pageMigrationPolicy).
 		WithCoherenceDirectory(b.coherenceDirectory).
 		WithIdealDirectory(b.idealDirectory).
+		WithCDFifoReplacement(b.cdFifoReplacement).
 		WithCohDirSize(b.sdByteSize).
 		WithSDNumBanks(b.sdNumBanks).
 		WithSDLog2NumSubEntry(b.sdLog2NumSubEntry).
 		WithSDDisableRSB(b.sdDisableRSB).
 		WithSDDisableCBF(b.sdDisableCBF).
+		WithSDFE(b.sdFE).
 		WithSDDisableDemoteLock(b.sdDisableDemoteLock).
 		WithSDPromoteRelaxed(b.sdPromoteRelaxed).
 		WithSDUseRsbHintAlloc(b.sdUseRsbHintAlloc).
 		WithSDRecordSilentEvict(b.sdRecordSilentEvict).
+		WithSDPromoteAtEvict(b.sdPromoteAtEvict).
+		WithSDPromoteAtEvictBiasVictim(b.sdPromoteAtEvictBiasVictim).
+		WithSDPromoteAtEvictMultiBank(b.sdPromoteAtEvictMultiBank).
 		WithMGDRegionSize(b.mgdRegionSize).
-		WithRECHalfSet(b.recHalfSet)
+		WithRECHalfSet(b.recHalfSet).
+		WithInvExtraLatency(b.invExtraLatency)
 	fmt.Printf("[r9nano Builder]\tCreating GPU Builder with log2CacheLineSize %d, log2PageSize %d coherenceDirectory %d.\n",
 		b.log2CacheBlockSize, b.log2PageSize, b.coherenceDirectory)
 
@@ -298,7 +357,7 @@ func (b *Builder) createGPUBuilder(
 
 func (b *Builder) createGPUs(
 	rootComplexID int,
-	pcieConnector *pcie.Connector,
+	nvlinkConnector *nvlink.Connector,
 	gpuBuilder r9nano.Builder,
 	gpuDriver *driver.Driver,
 	pmcAddressTable *mem.BankedAddressPortMapper,
@@ -306,12 +365,17 @@ func (b *Builder) createGPUs(
 	lastSwitchID := rootComplexID
 	for i := 1; i < b.numGPUs+1; i++ {
 		if i%2 == 1 {
-			lastSwitchID = pcieConnector.AddSwitch(rootComplexID)
+			// nvlink.Connector exposes AddPCIeSwitch() without a parent
+			// argument; wire it back to the root complex manually so the
+			// CPU↔GPU PCIe tree matches the previous topology.
+			lastSwitchID = nvlinkConnector.AddPCIeSwitch()
+			nvlinkConnector.ConnectSwitchesWithPCIeLink(
+				rootComplexID, lastSwitchID)
 		}
 
 		fmt.Printf("\nCreate GPU %d\n", i)
 		b.createGPU(i, gpuBuilder, gpuDriver, pmcAddressTable,
-			pcieConnector, lastSwitchID)
+			nvlinkConnector, lastSwitchID)
 
 	}
 }
@@ -333,17 +397,22 @@ func (b *Builder) createRDMAAddrTable() *mem.BankedAddressPortMapper {
 func (b *Builder) createConnection(
 	gpuDriver *driver.Driver,
 	mmuComponent *mmu.Comp,
-) (*pcie.Connector, int) {
-	// connection := sim.NewDirectConnection(engine)
-	// connection := noc.NewFixedBandwidthConnection(32, engine, 1*sim.GHz)
-	// connection.SrcBufferCapacity = 40960000
-	pcieConnector := pcie.NewConnector().
+) (*nvlink.Connector, int) {
+	// PCIe tree carries CPU↔GPU control traffic; NVLink mesh carries
+	// inter-GPU RDMA/coherence. REC paper Table 2: 300 GB/s bi-directional
+	// inter-GPU bandwidth.
+	nvlinkConnector := nvlink.NewConnector().
 		WithEngine(b.simulation.GetEngine()).
-		WithVersion(4, 16).
-		WithSwitchLatency(140)
+		WithPCIeVersion(4, 16).
+		WithPCIeSwitchLatency(140).
+		// 150 GB/s per direction × 2 = 300 GB/s aggregate (paper's
+		// "bi-directional" reading). Adjust to 300<<30 if the paper
+		// number is interpreted as per-direction.
+		WithNVLinkBandwidth(150 * (1 << 30)).
+		WithNVLinkSwitchLatency(140)
 
-	pcieConnector.CreateNetwork("PCIe")
-	rootComplexID := pcieConnector.AddRootComplex(
+	nvlinkConnector.CreateNetwork("InterGPU")
+	rootComplexID := nvlinkConnector.AddRootComplex(
 		[]sim.Port{
 			gpuDriver.GetPortByName("GPU"),
 			gpuDriver.GetPortByName("MMU"),
@@ -351,7 +420,7 @@ func (b *Builder) createConnection(
 			mmuComponent.GetPortByName("Top"),
 		})
 
-	return pcieConnector, rootComplexID
+	return nvlinkConnector, rootComplexID
 }
 
 func (b *Builder) createRDMAAddressMapper() {
@@ -366,7 +435,7 @@ func (b *Builder) createGPU(
 	gpuBuilder r9nano.Builder,
 	gpuDriver *driver.Driver,
 	pmcAddressTable *mem.BankedAddressPortMapper,
-	pcieConnector *pcie.Connector,
+	nvlinkConnector *nvlink.Connector,
 	pcieSwitchID int,
 ) *sim.Domain {
 	name := fmt.Sprintf("GPU[%d]", index)
@@ -390,7 +459,8 @@ func (b *Builder) createGPU(
 	b.configRDMAEngine(gpu)
 	// b.configPMC(gpu, gpuDriver, pmcAddressTable)
 
-	pcieConnector.PlugInDevice(pcieSwitchID, gpu.Ports())
+	deviceID := nvlinkConnector.PlugInDevice(pcieSwitchID, gpu.Ports())
+	b.gpuDeviceIDs = append(b.gpuDeviceIDs, deviceID)
 
 	// b.gpus = append(b.gpus, gpu)
 

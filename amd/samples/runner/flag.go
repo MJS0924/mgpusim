@@ -87,6 +87,8 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
+var cdFifoReplacement = flag.Bool("cd-fifo-replacement", false,
+	"Use FIFO replacement for CD/HMG directory (paper §4.2 baseline). REC unaffected.")
 var sdNumBanks = flag.Int("sd-num-banks", 5,
 	"SuperDirectory: number of banks (2–8)")
 var sdLog2NumSubEntry = flag.Uint64("sd-log2-sub-entry", 2,
@@ -97,6 +99,10 @@ var sdDisableRSB = flag.Bool("sd-disable-rsb", false,
 	"SuperDirectory: disable Region Size Buffer")
 var sdDisableCBF = flag.Bool("sd-disable-cbf", false,
 	"SuperDirectory: disable Counting Bloom Filter")
+var sdFE = flag.Bool("sd-fe", false,
+	"SuperDirectory: FE layout — shrink the coarser banks (all except the "+
+		"finest two) to 1/4 of the default numSets. Default false uses the "+
+		"uniform-doubling formula set>>bank<<i.")
 var sdDisableDemoteLock = flag.Bool("sd-disable-demote-lock", false,
 	"SuperDirectory: disable the demote lock; every demote trigger goes down the cascading path")
 var sdPromoteRelaxed = flag.Bool("sd-promote-relaxed", false,
@@ -105,9 +111,19 @@ var sdUseRsbHintAlloc = flag.Bool("sd-use-rsb-hint-alloc", true,
 	"SuperDirectory: doWriteMiss honors RSB hint when allocating new entries (instead of always finest). Default true (S4 fix).")
 var sdRecordSilentEvict = flag.Bool("sd-rsb-record-evict", true,
 	"SuperDirectory: every non-finest eviction (write-miss/promote/demote) writes the victim bank into RSB, not just eviction-with-sharers. Default true (S5 fix).")
+var sdPromoteAtEvict = flag.Bool("sd-promote-at-evict", false,
+	"SuperDirectory: §4 v1 — enable promote-at-evict at the finest bank.")
+var sdPromoteAtEvictBiasVictim = flag.Bool("sd-promote-at-evict-bias-victim", true,
+	"SuperDirectory: §4 v2 — bias finest-bank victim selection toward promote-eligible entries. Only effective when -sd-promote-at-evict is set.")
+var sdPromoteAtEvictMultiBank = flag.Bool("sd-promote-at-evict-multi-bank", false,
+	"SuperDirectory: §4 v3 — extend promote-at-evict to non-finest, non-coarsest banks (strict predicate). Only effective when -sd-promote-at-evict is set.")
 var mgdRegionSize = flag.Uint64("mgd-region-size", 1024,
 	"MGD: coarse-grain region size in bytes "+
 		"(1024=DGD-1K, 4096=DGD-4K, 8192=DGD-8K). Power of two, >= block size.")
+var invExtraLatencyFlag = flag.Int("inv-extra-latency", 0,
+	"Extra cycles added to the L2 invalidation pipeline on top of the "+
+		"baseline directory latency. 0 = unchanged. Use to measure how "+
+		"sensitive runtime is to invalidation handling cost.")
 var recHalfSetFlag = flag.Bool("rec-half-set", false,
 	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
 		"2x entry-size hardware overhead.")
@@ -206,17 +222,23 @@ func (r *Runner) parseGPUFlag() {
 	// }
 
 	r.idealDirectory = *idealDirectory
+	r.cdFifoReplacement = *cdFifoReplacement
 	r.sdNumBanks = *sdNumBanks
 	r.sdLog2NumSubEntry = *sdLog2NumSubEntry
 	r.sdByteSize = *sdByteSize
 	r.sdDisableRSB = *sdDisableRSB
 	r.sdDisableCBF = *sdDisableCBF
+	r.sdFE = *sdFE
 	r.sdDisableDemoteLock = *sdDisableDemoteLock
 	r.sdPromoteRelaxed = *sdPromoteRelaxed
 	r.sdUseRsbHintAlloc = *sdUseRsbHintAlloc
 	r.sdRecordSilentEvict = *sdRecordSilentEvict
+	r.sdPromoteAtEvict = *sdPromoteAtEvict
+	r.sdPromoteAtEvictBiasVictim = *sdPromoteAtEvictBiasVictim
+	r.sdPromoteAtEvictMultiBank = *sdPromoteAtEvictMultiBank
 	r.mgdRegionSize = *mgdRegionSize
 	r.recHalfSet = *recHalfSetFlag
+	r.invExtraLatency = *invExtraLatencyFlag
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

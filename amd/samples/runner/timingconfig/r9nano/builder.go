@@ -48,6 +48,7 @@ type Builder struct {
 	sdLog2NumSubEntry              uint64
 	sdDisableRSB                   bool
 	sdDisableCBF                   bool
+	sdFE                        bool
 	sdDisableDemoteLock            bool
 	sdPromoteRelaxed               bool
 	sdUseRsbHintAlloc              bool
@@ -277,6 +278,11 @@ func (b Builder) WithSDDisableRSB(v bool) Builder {
 
 func (b Builder) WithSDDisableCBF(v bool) Builder {
 	b.sdDisableCBF = v
+	return b
+}
+
+func (b Builder) WithSDFE(v bool) Builder {
+	b.sdFE = v
 	return b
 }
 
@@ -952,7 +958,9 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
-			WithDirectoryLatency(1).
+			// Total directory access = dirLatency + bankLatency (default 1) = 10.
+			// SD branch uses 17 for a +8 cycle hierarchical-lookup penalty (=18 total).
+			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget: at most 2 InvReqs per output
 			// channel per cycle (RDMA-bound + local-L2-bound counted
 			// separately). Models the directory controller's
@@ -998,7 +1006,8 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
-			WithDirectoryLatency(1).
+			// Total = dirLatency + bankLatency (default 1) = 10. See CD branch.
+			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget — same value as other variants.
 			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
@@ -1025,6 +1034,32 @@ func (b *Builder) buildCoherenceDirectory() {
 
 	} else if b.coherenceDirectory == 2 { // superDirectory
 		byteSize := b.cohDirSize
+		// SD FE layout: shrink the coarser banks (all except the finest two)
+		// to 1/4 of the default numSets. Default layout uses the uniform
+		// doubling formula `set >> bank << i` (set = byteSize/(way*block)).
+		// When -sd-fe is set, banks [0 .. numBanks-3] are divided by 4
+		// (equivalent to `set >> (bank+2) << i`). Slice is nil otherwise so
+		// the SD builder keeps the legacy formula.
+		var sdNumSetsPerBank []int
+		if b.sdFE {
+			const sdWay = 8
+			blockSize := 1 << b.log2CacheLineSize
+			set := int(byteSize) / (sdWay * blockSize)
+			sdNumSetsPerBank = make([]int, b.sdNumBanks)
+			for i := 0; i < b.sdNumBanks; i++ {
+				if i < b.sdNumBanks-2 {
+					sdNumSetsPerBank[i] = set >> (b.sdNumBanks + 2) << i
+				} else {
+					sdNumSetsPerBank[i] = set >> b.sdNumBanks << i
+				}
+				if sdNumSetsPerBank[i] <= 0 {
+					panic(fmt.Sprintf(
+						"SD FE: numSetsPerBank[%d] <= 0 (set=%d numBanks=%d). "+
+							"Increase -sd-byte-size or decrease -sd-num-banks.",
+						i, set, b.sdNumBanks))
+				}
+			}
+		}
 		dir := superdirectory.MakeBuilder().
 			WithEngine(b.simulation.GetEngine()).
 			WithFreq(b.freq).
@@ -1033,12 +1068,17 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithLog2PageSize(b.log2PageSize).
 			WithLog2NumSubEntry(b.sdLog2NumSubEntry).
 			WithNumBanks(b.sdNumBanks).
+			WithNumSetsPerBank(sdNumSetsPerBank). // nil → builder uses legacy formula
 			WithWayAssociativity(8).
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
-			WithDirectoryLatency(1).
+			// SD directory pipeline is +8 cycles vs other variants to model
+			// the extra tag-array traversal cost of SD's multi-bank
+			// hierarchical lookup. Total = dirLatency + bankLatency = 18
+			// (others: 9 + 1 = 10).
+			WithDirectoryLatency(17).
 			// Phase 2 inv-emit budget — same value as CD/REC for fair
 			// cross-variant comparison.
 			WithMaxInvEmitPerCycle(2).
@@ -1087,7 +1127,8 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
-			WithDirectoryLatency(1).
+			// Total = dirLatency + bankLatency = 10. See CD branch.
+			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget — same value as CD/SD for fair
 			// cross-variant comparison.
 			WithMaxInvEmitPerCycle(2).
@@ -1128,7 +1169,8 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
 			WithBankLatency(1).
-			WithDirectoryLatency(1).
+			// Total = dirLatency + bankLatency = 10. See CD branch.
+			WithDirectoryLatency(9).
 			WithAddressMapperType("interleaved").
 			WithFetchSingleCacheLine(true).
 			WithDisableRSB(b.sdDisableRSB).
@@ -1167,7 +1209,8 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithByteSize(byteSize).
 			WithNumMSHREntry(64).
 			WithNumReqPerCycle(16).
-			WithDirectoryLatency(1).
+			// Total = dirLatency + bankLatency (default 1) = 10. See CD branch.
+			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget — same value as CD/SD/REC for
 			// fair comparison. Previously omitted from this HMG branch
 			// only, causing HMG to behave like Phase-2-disabled CD_2.

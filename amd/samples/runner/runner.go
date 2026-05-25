@@ -49,17 +49,23 @@ type Runner struct {
 	pageMigrationPolicy   uint64
 	coherenceDirectory    uint64
 	idealDirectory        bool
+	cdFifoReplacement     bool
 	sdNumBanks            int
 	sdLog2NumSubEntry     uint64
 	sdByteSize            uint64
 	sdDisableRSB          bool
 	sdDisableCBF          bool
+	sdFE               bool
 	sdDisableDemoteLock   bool
 	sdPromoteRelaxed      bool
 	sdUseRsbHintAlloc     bool
 	sdRecordSilentEvict   bool
+	sdPromoteAtEvict           bool
+	sdPromoteAtEvictBiasVictim bool
+	sdPromoteAtEvictMultiBank  bool
 	mgdRegionSize         uint64
 	recHalfSet            bool
+	invExtraLatency       int
 }
 
 // Init initializes the platform simulate
@@ -118,17 +124,23 @@ func (r *Runner) buildTimingPlatform() {
 		WithPageMigrationPolicy(r.pageMigrationPolicy).
 		WithCoherenceDirectory(r.coherenceDirectory).
 		WithIdealDirectory(r.idealDirectory).
+		WithCDFifoReplacement(r.cdFifoReplacement).
 		WithSDNumBanks(r.sdNumBanks).
 		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).
 		WithSDByteSize(r.sdByteSize).
 		WithSDDisableRSB(r.sdDisableRSB).
 		WithSDDisableCBF(r.sdDisableCBF).
+		WithSDFE(r.sdFE).
 		WithSDDisableDemoteLock(r.sdDisableDemoteLock).
 		WithSDPromoteRelaxed(r.sdPromoteRelaxed).
 		WithSDUseRsbHintAlloc(r.sdUseRsbHintAlloc).
 		WithSDRecordSilentEvict(r.sdRecordSilentEvict).
+		WithSDPromoteAtEvict(r.sdPromoteAtEvict).
+		WithSDPromoteAtEvictBiasVictim(r.sdPromoteAtEvictBiasVictim).
+		WithSDPromoteAtEvictMultiBank(r.sdPromoteAtEvictMultiBank).
 		WithMGDRegionSize(r.mgdRegionSize).
-		WithRECHalfSet(r.recHalfSet)
+		WithRECHalfSet(r.recHalfSet).
+		WithInvExtraLatency(r.invExtraLatency)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()
