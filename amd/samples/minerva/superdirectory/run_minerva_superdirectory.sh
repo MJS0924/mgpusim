@@ -10,7 +10,7 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/m
     -use-unified-memory \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/minerva_superdirectory.txt
 

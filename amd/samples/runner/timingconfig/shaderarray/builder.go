@@ -475,7 +475,10 @@ func (b *Builder) buildL1VCaches() {
 		WithEngine(b.simulation.GetEngine()).
 		WithVisTracer(b.simulation.GetVisTracer()).
 		WithFreq(b.freq).
-		WithBankLatency(60).
+		// L1V hit latency: dirLatency (2) + bankLatency = 34 cycles total,
+		// matching NVIDIA A100 / AMD CDNA2 L1V hit (~28-34). Previous 60
+		// cycles was ~2× the real hardware value.
+		WithBankLatency(32).
 		WithLog2PageSize(b.log2PageSize).
 		WithNumBanks(1).
 		WithLog2BlockSize(b.log2CacheLineSize).

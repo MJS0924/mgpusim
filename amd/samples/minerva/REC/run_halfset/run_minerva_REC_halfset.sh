@@ -8,7 +8,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/REC/run_halfset
     -use-unified-memory \
     -coherence-directory=REC \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
     -rec-half-set \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/minerva_REC_halfset.txt

@@ -182,7 +182,13 @@ func (t DataParallelismMultiGPUTrainer) averageGradient() {
 		}
 
 		bufs := make([]driver.Ptr, gpuNum)
-		bufSize := 65536
+		// 1 M float32 = 4 MB ring buffer per GPU. Increased from 64 K
+		// (256 KB) so the ring all-reduce dispatches ~16× fewer chunks
+		// per gradient tensor — for the 2048-hidden minerva (≈4 M element
+		// gradients per FC layer) this drops chunk count from ~64 to ~4,
+		// cutting AllReduce kernel count (and the per-chunk dispatch
+		// overhead that dominated multi-GPU sweep wall time) accordingly.
+		bufSize := 1048576
 
 		for i := 0; i < gpuNum; i++ {
 			datas[i] = gradients[i].Ptr()

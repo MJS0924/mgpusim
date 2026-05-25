@@ -13,7 +13,6 @@ import (
 	"github.com/sarchlab/akita/v4/mem/cache/writebackcoh"
 
 	"github.com/sarchlab/akita/v4/mem/dram"
-	"github.com/sarchlab/akita/v4/mem/idealmemcontroller"
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/mem/vm/gmmu"
@@ -53,8 +52,12 @@ type Builder struct {
 	sdPromoteRelaxed               bool
 	sdUseRsbHintAlloc              bool
 	sdRecordSilentEvict            bool
+	sdPromoteAtEvict               bool
+	sdPromoteAtEvictBiasVictim     bool
+	sdPromoteAtEvictMultiBank      bool
 	mgdRegionSize                  uint64
 	recHalfSet                     bool
+	invExtraLatency                int
 	memAddrOffset                  uint64
 	dramSize                       uint64
 	globalStorage                  *mem.Storage
@@ -97,6 +100,7 @@ type Builder struct {
 	pageMigrationPolicy uint64
 	coherenceDirectory  uint64
 	idealDirectory      bool
+	cdFifoReplacement   bool // FIFO replacement for CD/HMG (paper §4.2 baseline)
 }
 
 // MakeBuilder creates a new builder.
@@ -246,6 +250,11 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 	return b
 }
 
+func (b Builder) WithCDFifoReplacement(v bool) Builder {
+	b.cdFifoReplacement = v
+	return b
+}
+
 func (b Builder) WithCohDirSize(size uint64) Builder {
 	b.cohDirSize = size
 	return b
@@ -291,6 +300,21 @@ func (b Builder) WithSDRecordSilentEvict(v bool) Builder {
 	return b
 }
 
+func (b Builder) WithSDPromoteAtEvict(v bool) Builder {
+	b.sdPromoteAtEvict = v
+	return b
+}
+
+func (b Builder) WithSDPromoteAtEvictBiasVictim(v bool) Builder {
+	b.sdPromoteAtEvictBiasVictim = v
+	return b
+}
+
+func (b Builder) WithSDPromoteAtEvictMultiBank(v bool) Builder {
+	b.sdPromoteAtEvictMultiBank = v
+	return b
+}
+
 func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
 	b.mgdRegionSize = bytes
 	return b
@@ -300,6 +324,15 @@ func (b Builder) WithMGDRegionSize(bytes uint64) Builder {
 // hardware overhead.
 func (b Builder) WithRECHalfSet(v bool) Builder {
 	b.recHalfSet = v
+	return b
+}
+
+// WithInvExtraLatency adds n extra directory-pipeline stages to the L2's
+// dedicated invalidation pipeline (writebackcoh invPipeline). Used to
+// measure how much cross-GPU InvReq handling cost contributes to runtime
+// without perturbing the regular read/write paths.
+func (b Builder) WithInvExtraLatency(n int) Builder {
+	b.invExtraLatency = n
 	return b
 }
 
@@ -931,6 +964,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
 			WithFetchSingleCacheLine(true).
+			WithFIFOReplacement(b.cdFifoReplacement).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.CohDir", b.name))
@@ -1016,6 +1050,9 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithPromoteRelaxed(b.sdPromoteRelaxed).
 			WithUseRsbHintAlloc(b.sdUseRsbHintAlloc).
 			WithRecordSilentEvict(b.sdRecordSilentEvict).
+			WithPromoteAtEvict(b.sdPromoteAtEvict).
+			WithPromoteAtEvictBiasVictim(b.sdPromoteAtEvictBiasVictim).
+			WithPromoteAtEvictMultiBank(b.sdPromoteAtEvictMultiBank).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.SuperDir", b.name))
@@ -1138,6 +1175,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
+			WithFIFOReplacement(b.cdFifoReplacement).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
 			Build(fmt.Sprintf("%s.HMGDir", b.name))
@@ -1246,12 +1284,20 @@ func (b *Builder) buildL2Caches() {
 			// invCostInSlots=2 weight in processTransaction (1 inv
 			// commit blocks 2 of 2 commit slots/cycle), capturing
 			// state-bit write contention. wasted invs pay the same
-			// 2-cycle directory traversal as productive ones (hit/
-			// miss agnostic floor). CD/SD/REC variants share this
-			// configuration via writebackcoh.
-			WithDirectoryLatency(2).
-			WithSnoopLatency(0).
-			WithBankLatency(10).
+			// directory traversal as productive ones (hit/miss agnostic
+			// floor). CD/SD/REC variants share this configuration via
+			// writebackcoh.
+			//
+			// L2 hit latency: dirLatency (16, NoC routing + tag-array
+			// lookup) + bankLatency (184, data-array pipeline including
+			// ECC) = 200 cycles total. Matches NVIDIA A100 L2 hit
+			// (~190-210) and AMD CDNA2 L2 hit (~270 / 1.35× = ~200 at
+			// our 1 GHz vs their 1.35 GHz). Previous 2 + 10 = 12 cycles
+			// was 15-20× too short — L2 hits looked nearly free which
+			// over-rewarded directory variants that increase L2 hit rate.
+			WithDirectoryLatency(16).
+			WithSnoopLatency(b.invExtraLatency).
+			WithBankLatency(184).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask)
 
@@ -1293,22 +1339,16 @@ func (b *Builder) buildL2Caches() {
 }
 
 func (b *Builder) buildDRAMControllers() {
-	// memCtrlBuilder := b.createDramControllerBuilder()
+	// REC paper baseline: HBM, 1 TB/s aggregate (Table 2). Use the akita
+	// dram timing model instead of idealmemcontroller so coherence/RDMA
+	// traffic actually sees DRAM queueing.
+	memCtrlBuilder := b.createDramControllerBuilder()
 
 	for i := 0; i < b.numMemoryBank; i++ {
 		dramName := fmt.Sprintf("%s.DRAM[%d]", b.name, i)
-		dram := idealmemcontroller.MakeBuilder().
-			WithEngine(b.simulation.GetEngine()).
-			WithFreq(b.freq).
-			WithLatency(100).
-			WithStorage(b.globalStorage).
-			Build(dramName)
+		dram := memCtrlBuilder.Build(dramName)
 		b.simulation.RegisterComponent(dram)
 		b.drams = append(b.drams, dram)
-
-		// if b.enableMemTracing {
-		// 	tracing.CollectTrace(dram, b.memTracer)
-		// }
 	}
 }
 
@@ -1329,9 +1369,12 @@ func (b *Builder) createDramControllerBuilder() dram.Builder {
 	dramRankSize := dramBankSize * dramDevicePerRank * dramBank
 	dramRank := int(memBankSize * 8 / uint64(dramRankSize))
 
+	// REC paper baseline targets 1 TB/s aggregate. With 16 controllers ×
+	// 256-bit bus × burstLength 4, 500 MHz yields ~512 GB/s; bumping to
+	// 1 GHz lands close to 1 TB/s.
 	memCtrlBuilder := dram.MakeBuilder().
 		WithEngine(b.simulation.GetEngine()).
-		WithFreq(500 * sim.MHz).
+		WithFreq(1 * sim.GHz).
 		WithProtocol(dram.HBM).
 		WithBurstLength(4).
 		WithDeviceWidth(dramDeviceWidth).

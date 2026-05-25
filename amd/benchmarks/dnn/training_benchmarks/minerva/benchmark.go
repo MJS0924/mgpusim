@@ -71,15 +71,31 @@ func (b *Benchmark) defineNetwork(gpuID int) {
 		to.EnableUnifiedMemory()
 	}
 
+	// Enlarged hidden dimensions to push the working set beyond per-GPU L2
+	// capacity (~4 MB) so directory pressure and coherence variant behavior
+	// actually exercise differently across CD/SD/REC/HMG. The original
+	// 256/100/100 hidden dims kept the entire model + activations resident
+	// in L2 and produced near-identical per-variant results.
+	//
+	// Hidden 2048 (downsized from 4096 to bring single-batch wall time to
+	// ~1 day while keeping working set ≫ L2):
+	//   FC0  784×2048 + 2048      ≈ 1.6 M params (~6.4 MB)
+	//   FC2  2048×2048 + 2048     ≈ 4.2 M params (~16.8 MB)
+	//   FC4  2048×2048 + 2048     ≈ 4.2 M params (~16.8 MB)
+	//   FC6  2048×10 + 10         ≈  20 K params
+	//   Total                    ≈ 10 M params (~40 MB)
+	//   × 4 (params + grads + Adam V + S) ≈ 160 MB per GPU
+	// GEMM compute (FC2/FC4): 2048³ = 8.6 GFLOPs vs prior 4096³ = 68.7 GFLOPs
+	//   → 8× less compute per heavy kernel, 4× less weight traffic.
 	network := training.Network{
 		Layers: []layers.Layer{
-			layers.NewFullyConnectedLayer(0, to, 784, 256),
+			layers.NewFullyConnectedLayer(0, to, 784, 2048),
 			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(2, to, 256, 100),
+			layers.NewFullyConnectedLayer(2, to, 2048, 2048),
 			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(4, to, 100, 100),
+			layers.NewFullyConnectedLayer(4, to, 2048, 2048),
 			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(6, to, 100, 10),
+			layers.NewFullyConnectedLayer(6, to, 2048, 10),
 		},
 	}
 

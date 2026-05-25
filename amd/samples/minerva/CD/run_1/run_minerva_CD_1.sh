@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/CD/run_1
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=1 \
-    -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/minerva_CD_1.txt
 
