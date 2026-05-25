@@ -197,6 +197,8 @@ func (r *Runner) parseGPUFlag() {
 		r.pageMigrationPolicy = 0
 	case "Duplication":
 		r.pageMigrationPolicy = 1
+	case "None":
+		r.pageMigrationPolicy = 2
 	default:
 		panic("unknown page migration policy: " + *pageMigrationPolicy)
 	}
