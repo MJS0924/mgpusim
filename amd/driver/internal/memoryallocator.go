@@ -148,8 +148,13 @@ func (a *memoryAllocatorImpl) AllocateUnified(
 			chunkPages = remainingPages
 		}
 
-		deviceID := a.nextDeviceID + 2
-		a.nextDeviceID = (a.nextDeviceID + 1) % (len(a.devices) - 2)
+		// Round-robin across all GPUs (devices 1..N). Device 0 is the CPU
+		// and is the only one skipped. Previously +2 / -2 also skipped
+		// device 1 (GPU 1) as a "dummy" slot, biasing allocation onto
+		// GPUs 2..N; that special case is removed so all GPUs receive
+		// equal-weight chunks.
+		deviceID := a.nextDeviceID + 1
+		a.nextDeviceID = (a.nextDeviceID + 1) % (len(a.devices) - 1)
 
 		vAddr := a.allocatePages(int(chunkPages), pid, deviceID, true)
 		if first {

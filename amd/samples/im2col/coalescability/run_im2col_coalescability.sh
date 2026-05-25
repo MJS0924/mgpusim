@@ -4,7 +4,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/im2col/coalescability
 
 ../im2col \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=CoherenceDirectory \
     -coherence-unit-size=0 \

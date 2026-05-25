@@ -6,11 +6,11 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/p
 
 ../pagerank \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
-    -node=56600 -sparsity=0.005 -iterations=3 \
+    -node=80000 -sparsity=0.005 -iterations=3 \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/pagerank/pagerank_SD_per_window.csv \

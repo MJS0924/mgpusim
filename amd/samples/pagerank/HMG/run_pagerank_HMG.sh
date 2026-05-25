@@ -4,12 +4,12 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/HMG
 
 ../pagerank \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=HMG \
     -coherence-unit-size=2 \
     -log2-page-size=12 \
-    -node=56600 -sparsity=0.005 -iterations=3 \
+    -node=80000 -sparsity=0.005 -iterations=3 \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/pagerank/pagerank_HMG_per_window.csv \

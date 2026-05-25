@@ -6,7 +6,7 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/s
 
 ../spmv \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \

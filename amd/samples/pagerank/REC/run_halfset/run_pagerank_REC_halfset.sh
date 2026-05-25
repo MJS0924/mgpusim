@@ -4,11 +4,11 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/REC/run_halfset
 
 ../../pagerank \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=REC \
     -log2-page-size=12 \
-    -node=56600 -sparsity=0.005 -iterations=3 \
+    -node=80000 -sparsity=0.005 -iterations=3 \
     -rec-half-set \
     -per-window-snapshot \
     -window-instructions=50000 \

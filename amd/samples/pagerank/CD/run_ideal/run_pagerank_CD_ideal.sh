@@ -4,12 +4,12 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/CD/run_ideal
 
 ../../pagerank \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=0 \
-    -node=56600 -sparsity=0.005 -iterations=3 \
+    -node=80000 -sparsity=0.005 -iterations=3 \
     -ideal-directory=true \
     -per-window-snapshot \
     -window-instructions=50000 \

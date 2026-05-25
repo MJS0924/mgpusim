@@ -4,7 +4,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/im2col/REC/run_default
 
 ../../im2col \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=REC \
     -log2-page-size=12 \

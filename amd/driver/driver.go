@@ -492,10 +492,7 @@ func (d *Driver) distributeWGToGPUs(
 	wgDist := make([]int, len(actualGPUs)+1)
 
 	totalCUCount := 0
-	for i, devID := range actualGPUs {
-		if i == 0 {
-			continue
-		}
+	for _, devID := range actualGPUs {
 		totalCUCount += d.devices[devID].Properties.CUCount
 	}
 
@@ -506,9 +503,6 @@ func (d *Driver) distributeWGToGPUs(
 	wgPerCU := (totalWGCount-1)/totalCUCount + 1
 
 	for i, devID := range actualGPUs {
-		if i == 0 {
-			continue
-		}
 		cuCount := d.devices[devID].Properties.CUCount
 		wgToAllocate := cuCount * wgPerCU
 		wgDist[i+1] = wgAllocated + wgToAllocate
@@ -702,24 +696,12 @@ func (d *Driver) sendShootDownReqs() bool {
 	}
 
 	fmt.Printf("[Driver]\tCurrent Page Host GPU: %d\n", d.currentPageMigrationReq.CurrPageHostGPU)
-	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
-		fmt.Printf("[Driver]\tSkip GPU Shoot Down Because of 1st touch\n")
-		d.numShootDownACK++
-		return d.processShootdownCompleteRsp(nil)
-	}
 
 	accessingGPUs := d.currentPageMigrationReq.CurrAccessingGPUs
 	pid := d.currentPageMigrationReq.PID
 
 	fmt.Printf("[Driver]\tInitiate GPU Shoot Down: ")
-	for i, _ := range d.GPUs {
-		// remote caching이 추가됨에 따라 모든 GPU가 멈춰야 함..
-		// 단, GPU 1에서 이동하는 경우는 멈춤 x
-
-		if i == 0 { // GPU 1은 dummy라서 shootdown 필요 없음
-			continue
-		}
-
+	for i := range d.GPUs {
 		toShootdownGPU := uint64(i)
 		shootDownReq := protocol.NewShootdownCommand(
 			d.gpuPort, d.GPUs[toShootdownGPU],
@@ -801,14 +783,6 @@ func (d *Driver) processShootdownCompleteRsp(
 }
 
 func (d *Driver) initiateRDMADrain() bool {
-	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
-		fmt.Printf("[Driver]\tSkip RDMA Drain Because of 1st touch\n")
-		d.numRDMADrainACK++
-		d.processRDMADrainRsp(nil)
-
-		return true
-	}
-
 	for i := 0; i < len(d.GPUs); i++ {
 		req := protocol.NewRDMADrainCmdFromDriver(d.gpuPort,
 			d.GPUs[i])
@@ -1167,19 +1141,7 @@ func (d *Driver) processRDMARestartRspToDriver(
 }
 
 func (d *Driver) prepareGPURestartReqs() {
-	if d.currentPageMigrationReq.CurrPageHostGPU == 1 {
-		fmt.Printf("[Driver]\tSkip GPU Restart Because of 1st touch\n")
-		d.numRestartACK++
-		d.handleGPURestartRsp(nil)
-
-		return
-	}
-
-	for i, _ := range d.GPUs {
-		if uint64(i) == 0 {
-			continue
-		}
-
+	for i := range d.GPUs {
 		restartGPUID := i
 		restartReq := protocol.NewGPURestartReq(
 			d.gpuPort,

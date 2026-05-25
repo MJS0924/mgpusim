@@ -4,7 +4,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/fir/REC/run_default
 
 ../../fir \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=REC \
     -log2-page-size=12 \

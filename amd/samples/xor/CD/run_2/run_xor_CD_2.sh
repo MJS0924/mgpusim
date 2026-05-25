@@ -4,7 +4,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/xor/CD/run_2
 
 ../../xor \
     -timing \
-    -unified-gpus=1,2,3,4,5 \
+    -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
