@@ -4,7 +4,9 @@ package rdma
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
+	"strings"
 
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
@@ -31,6 +33,13 @@ type Comp struct {
 	RDMADataInside     sim.Port
 	RDMADataOutside    sim.Port
 	RDMAInvInside      sim.Port
+	// D1: dedicated egress-to-local-SD port for InvRsp. processInvRsp
+	// (forwarding InvRsp received from outside down to local SD)
+	// sends here instead of RDMAInvInside, so the SD-side InvRsp
+	// FIFO is no longer head-blocked by InvReq sitting at the front
+	// of a shared incoming buffer. Cross-GPU side (RDMADataOutside)
+	// remains unchanged.
+	RDMAInvRspInside   sim.Port
 
 	reqFromL1Buf   []sim.Msg
 	procInvReqBuf  []sim.Msg
@@ -76,6 +85,14 @@ type Comp struct {
 	traceProcess bool
 	debugProcess bool
 	debugAddress uint64
+
+	// Observability — count of times processRspFromRDMARequestOutside
+	// took the unmatched-rsp fallback (transactionIndex==-1) and emitted
+	// a cloned response with RspTo="" toward localModuleBottoms. Each
+	// occurrence is also logged to stderr. Behavior preserved; counter
+	// added to identify the A2 (RSB-on) fir deadlock that strands ~128
+	// WriteDoneRsps in L2.writeBuffer.inflightEviction.
+	lostRspToInsideCount uint64
 }
 
 // SetLocalModuleFinder sets the table to lookup for local data.
@@ -527,18 +544,32 @@ func (c *Comp) processRspFromRDMARequestOutside(
 	var rspToInside mem.AccessRsp
 
 	if transactionIndex == -1 {
-		rspToInside = c.cloneRsp(rsp, "", rsp.GetOrigin().GetAddress())
-		rspToInside.Meta().Src = c.RDMARequestInside.AsRemote()
-		rspToInside.Meta().Dst = c.localModuleBottoms.Find(rsp.GetOrigin().GetAddress())
-	} else {
-		trans = c.transactionsFromInside[transactionIndex]
-		rspToInside = c.cloneRsp(rsp, trans.fromInside.Meta().ID, trans.fromInside.(mem.AccessReq).GetAddress())
-		rspToInside.Meta().Src = c.RDMARequestInside.AsRemote()
-		rspToInside.Meta().Dst = trans.fromInside.Meta().Src
-
-		// fmt.Printf("[RDMA %d]\tSend data %x to %s\n",
-		// 	c.deviceID, rsp.GetOrigin().GetAddress(), rspToInside.Meta().Dst)
+		// OBSERVABILITY (a) + phantom-drop: unmatched rsp on
+		// RDMARequestOutside. Previously this path emitted a phantom
+		// response with RspTo="" toward localModuleBottoms, which was
+		// then silently discarded downstream at
+		// superdirectory/bottomSender.processWriteDoneRsp/
+		// processDataReadyRsp — net effect: a stranded WriteDoneRsp at
+		// L2.writeBuffer.inflightEviction (A2 RSB-on fir deadlock,
+		// ~128 evictions). Fix: counter+stderr log, then drop the rsp
+		// at RDMA (consume incoming, return true) so we no longer
+		// inject a garbage RspTo="" message into the local fabric.
+		c.lostRspToInsideCount++
+		fmt.Fprintf(os.Stderr,
+			"[RDMA %d] [LOSTRSP %d] processRspFromRDMARequestOutside: no match in transactionsFromInside; rsp_type=%T rsp_to=%q origin_addr=%#x src=%s -> DROP (no phantom forward)\n",
+			c.deviceID, c.lostRspToInsideCount,
+			rsp, rsp.GetRspTo(), rsp.GetOrigin().GetAddress(), rsp.Meta().Src)
+		c.RDMARequestOutside.RetrieveIncoming()
+		return true
 	}
+
+	trans = c.transactionsFromInside[transactionIndex]
+	rspToInside = c.cloneRsp(rsp, trans.fromInside.Meta().ID, trans.fromInside.(mem.AccessReq).GetAddress())
+	rspToInside.Meta().Src = c.RDMARequestInside.AsRemote()
+	rspToInside.Meta().Dst = trans.fromInside.Meta().Src
+
+	// fmt.Printf("[RDMA %d]\tSend data %x to %s\n",
+	// 	c.deviceID, rsp.GetOrigin().GetAddress(), rspToInside.Meta().Dst)
 
 	err := c.RDMARequestInside.Send(rspToInside)
 	if err != nil {
@@ -550,15 +581,13 @@ func (c *Comp) processRspFromRDMARequestOutside(
 
 	c.RDMARequestOutside.RetrieveIncoming()
 
-	if transactionIndex != -1 {
-		c.transactionsFromInside =
-			append(c.transactionsFromInside[:transactionIndex],
-				c.transactionsFromInside[transactionIndex+1:]...)
+	c.transactionsFromInside =
+		append(c.transactionsFromInside[:transactionIndex],
+			c.transactionsFromInside[transactionIndex+1:]...)
 
-		// c.recordAccessCount(trans)
+	// c.recordAccessCount(trans)
 
-		c.traceInsideOutEnd(trans)
-	}
+	c.traceInsideOutEnd(trans)
 
 	// fmt.Printf("[%s]\t4. Response %x from %s to %s\n", c.Name(), trans.fromInside.(mem.AccessReq).GetAddress(), rsp.Meta().Src, rspToInside.Meta().Dst)
 	return true
@@ -744,18 +773,32 @@ func (c *Comp) processInvRsp(
 	}
 	req := c.invalidationFromInside[i]
 
+	// D1: deliver this InvRsp to the local SD via the dedicated
+	// InvRsp port (RDMAInvRspInside ↔ SD.RDMAInvRspPort). InvReq
+	// continues to use RDMAInvInside so that the two flit types are
+	// in distinct FIFOs and cannot head-block each other under
+	// invReqBuffer pressure. req.Meta().Src was stamped by Akita's
+	// port.Send as "...SuperDir.RDMAInvPort" (the old InvReq egress);
+	// rewrite to "...SuperDir.RDMAInvRspPort" so the new connection's
+	// port lookup succeeds. Non-RDMAInvPort Src values pass through
+	// unchanged (defensive: shouldn't occur for invalidationFromInside
+	// entries but keeps the function robust).
+	dstStr := string(req.Meta().Src)
+	if strings.Contains(dstStr, "RDMAInvPort") && !strings.Contains(dstStr, "RDMAInvRspPort") {
+		dstStr = strings.Replace(dstStr, "RDMAInvPort", "RDMAInvRspPort", 1)
+	}
 	rspToBottom := mem.InvRspBuilder{}.
-		WithSrc(c.RDMAInvInside.AsRemote()).
-		WithDst(req.Meta().Src).
+		WithSrc(c.RDMAInvRspInside.AsRemote()).
+		WithDst(sim.RemotePort(dstStr)).
 		WithRspTo(req.ReqFrom).
 		WithSrcRDMA(rsp.SrcRDMA).
 		Build()
 
 	err := (*sim.SendError)(nil)
-	if !c.RDMAInvInside.CanSend() {
+	if !c.RDMAInvRspInside.CanSend() {
 		c.procInvRspBuf = append(c.procInvRspBuf, rspToBottom)
 	} else {
-		err = c.RDMAInvInside.Send(rspToBottom)
+		err = c.RDMAInvRspInside.Send(rspToBottom)
 	}
 
 	if err == nil {

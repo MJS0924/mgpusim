@@ -157,6 +157,13 @@ func (b Builder) Build(name string) *Comp {
 	rdma.RDMADataInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataInside")
 	rdma.RDMADataOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataOutside")
 	rdma.RDMAInvInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvInside")
+	// D1: separate egress-to-local-SD port for InvRsp. RDMAInvInside
+	// continues to carry InvReq toward the local SD (and to drain
+	// SD-originated outgoing InvReq/InvRsp); the new InvRsp ingress at
+	// SD is fed by this new port. Splitting prevents the SD-side
+	// RDMAInvPort.HEAD HoL where a queued InvReq behind a full
+	// invReqBuffer also blocked InvRsp.
+	rdma.RDMAInvRspInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvRspInside")
 	rdma.CtrlPort = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".CtrlPort")
 
 	rdma.AddPort("RDMARequestInside", rdma.RDMARequestInside)
@@ -164,6 +171,7 @@ func (b Builder) Build(name string) *Comp {
 	rdma.AddPort("RDMADataOutside", rdma.RDMADataOutside)
 	rdma.AddPort("RDMADataInside", rdma.RDMADataInside)
 	rdma.AddPort("RDMAInvInside", rdma.RDMAInvInside)
+	rdma.AddPort("RDMAInvRspInside", rdma.RDMAInvRspInside)
 	rdma.AddPort("CtrlPort", rdma.CtrlPort)
 
 	tracing.CollectTrace(rdma, b.visTracer)

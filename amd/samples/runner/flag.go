@@ -79,8 +79,9 @@ var log2PageSize = flag.Uint64("log2-page-size", 12,
 	"Log2 of the page size in bytes.")
 var log2CacheBlockSize = flag.Uint64("log2-cache-block-size", 6,
 	"Log2 of the cache block size in bytes.")
-var pageMigrationPolicy = flag.String("page-migration-policy", "AccessCounter",
-	"Page migration policy.")
+var pageMigrationPolicy = flag.String("page-migration-policy", "None",
+	"Page migration policy. Default None (migration disabled). "+
+		"Options: AccessCounter, Duplication, None.")
 var coherenceDirectory = flag.String("coherence-directory", "CoherenceDirectory",
 	"Kind of coherence directory")
 var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
@@ -111,8 +112,10 @@ var sdUseRsbHintAlloc = flag.Bool("sd-use-rsb-hint-alloc", true,
 	"SuperDirectory: doWriteMiss honors RSB hint when allocating new entries (instead of always finest). Default true (S4 fix).")
 var sdRecordSilentEvict = flag.Bool("sd-rsb-record-evict", true,
 	"SuperDirectory: every non-finest eviction (write-miss/promote/demote) writes the victim bank into RSB, not just eviction-with-sharers. Default true (S5 fix).")
-var sdPromoteAtEvict = flag.Bool("sd-promote-at-evict", false,
-	"SuperDirectory: §4 v1 — enable promote-at-evict at the finest bank.")
+var sdPromoteAtEvict = flag.Bool("sd-promote-at-evict", true,
+	"SuperDirectory: §4 — enable promote-at-evict at the finest bank. "+
+		"Default ON. Disable with -sd-promote-at-evict=false "+
+		"(bias-victim on, multi-bank off by default).")
 var sdPromoteAtEvictBiasVictim = flag.Bool("sd-promote-at-evict-bias-victim", true,
 	"SuperDirectory: §4 v2 — bias finest-bank victim selection toward promote-eligible entries. Only effective when -sd-promote-at-evict is set.")
 var sdPromoteAtEvictMultiBank = flag.Bool("sd-promote-at-evict-multi-bank", false,

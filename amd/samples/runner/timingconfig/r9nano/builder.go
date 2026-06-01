@@ -485,38 +485,58 @@ func (b *Builder) connectL1ToCohDir() {
 		WithFreq(b.freq).
 		Build(b.name + ".RDMAToCohDirForInv")
 
+	// D1: dedicated InvRsp channel between RDMA and the directory.
+	// Plugged with rdma.RDMAInvRspInside on the RDMA side; the
+	// directory-side port depends on the directory type:
+	//   - SuperDirectory: plug to its new RDMAInvRsp port (HoL split
+	//     active — InvReq and InvRsp now in separate FIFOs).
+	//   - Other directories: plug to the SAME RDMAInv port as the
+	//     InvReq channel above. processInvRsp still delivers, but no
+	//     HoL relief (those directories don't have the new port yet).
+	RDMAToCohDirForInvRsp := directconnection.MakeBuilder().
+		WithEngine(b.simulation.GetEngine()).
+		WithFreq(b.freq).
+		Build(b.name + ".RDMAToCohDirForInvRsp")
+
 	RDMAToCohDir.PlugIn(b.rdmaEngine.RDMADataInside)
 	RDMAToCohDirForInv.PlugIn(b.rdmaEngine.RDMAInvInside)
+	RDMAToCohDirForInvRsp.PlugIn(b.rdmaEngine.RDMAInvRspInside)
 
 	if b.coherenceDirectory == 0 { // coherenceDirectory
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 
 	} else if b.coherenceDirectory == 1 { // large block cache
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 
 	} else if b.coherenceDirectory == 2 { // superDirectory
 		l1ToCohDir.PlugIn(b.superDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.superDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.superDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.superDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 3 { // REC
 		l1ToCohDir.PlugIn(b.recDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.recDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.recDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.recDir.GetPortByName("RDMAInv"))
 
 	} else if b.coherenceDirectory == 4 { // HMG
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 
 	} else if b.coherenceDirectory == 5 { // MGD
 		l1ToCohDir.PlugIn(b.mgdDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.mgdDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.mgdDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.mgdDir.GetPortByName("RDMAInv"))
 
 	}
 	// b.rdmaEngine.SetLocalModuleFinder(b.l1AddressMapper)
@@ -543,6 +563,9 @@ func (b *Builder) connectL1ToCohDir() {
 	} else if b.coherenceDirectory == 2 { // superDirectory
 		b.superDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.superDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
+		// D1: remote endpoint name for outgoing InvRsp flits (used by
+		// SD.bottomSender when routing the InvRsp egress).
+		b.superDir.ToRDMAInvRsp = b.rdmaEngine.RDMAInvRspInside.AsRemote()
 	} else if b.coherenceDirectory == 3 { // REC
 		b.recDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.recDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
