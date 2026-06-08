@@ -470,9 +470,14 @@ func (b *Builder) createGPU(
 func (b *Builder) configRDMAEngine(
 	gpu *sim.Domain,
 ) {
+	// [R1] Resolve peer GPU addresses to the typed RDMADataReq port
+	// (peer's AccessReq ingress). Previously this used the multiplexed
+	// "RDMAData" alias whose outgoingBuf was iter18-confirmed to mix
+	// three outbound classes; with the split, AccessReq egress has its
+	// own dedicated port and we route there directly.
 	b.rdmaAddressMapper.LowModules = append(
 		b.rdmaAddressMapper.LowModules,
-		gpu.GetPortByName("RDMAData").AsRemote())
+		gpu.GetPortByName("RDMADataReq").AsRemote())
 }
 
 // func (b *Builder) configPMC(

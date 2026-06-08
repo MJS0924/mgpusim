@@ -153,23 +153,53 @@ func (b Builder) Build(name string) *Comp {
 	// fmt.Printf("RDMA Log2PageSize: %d, Log2CacheLineSize: %d\n", rdma.log2PageSize, rdma.log2CacheLineSize)
 
 	rdma.RDMARequestInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMARequestInside")
-	rdma.RDMARequestOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMARequestOutside")
 	rdma.RDMADataInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataInside")
-	rdma.RDMADataOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataOutside")
 	rdma.RDMAInvInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvInside")
 	// [ITER7] Dedicated port for INV RSP. Separates RSP egress from
 	// REQ on the inside-facing inv link so a stalled REQ stream cannot
 	// head-of-line block a RSP that would unblock the peer's
 	// inflightInvToBottom cap.
 	rdma.RDMAInvRspInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvRspInside")
+
+	// [R1] Four typed wire-side ports replace the previous bidirectional
+	// RDMARequestOutside / RDMADataOutside pair. Each port is dedicated
+	// to ONE direction × ONE message type so a stalled type cannot
+	// head-of-line block the others on the cross-GPU path. Same buffer
+	// size as the existing Outside ports.
+	rdma.RDMADataReqOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataReqOutside")
+	rdma.RDMADataRspOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataRspOutside")
+	rdma.RDMAInvReqOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvReqOutside")
+	rdma.RDMAInvRspOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvRspOutside")
+
+	// [R1 INSIDE SPLIT] Typed Inside ports paired with the new Outside ports.
+	// REC connects via these — REQ traffic on RDMADataReqInside, RSP traffic
+	// on RDMADataRspInside. RDMAInvInside / RDMAInvRspInside (iter7) continue
+	// to handle inv-side typed paths from the inside.
+	rdma.RDMADataReqInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataReqInside")
+	rdma.RDMADataRspInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataRspInside")
+
+	// [R1 LEGACY] The legacy RDMARequestOutside / RDMADataOutside fields
+	// are deliberately left nil. Any remaining caller is forced to fail
+	// loudly (nil-port panic) rather than silently funnel mixed traffic
+	// back into a multiplexed buffer. Migrate callers to the typed ports.
+
 	rdma.CtrlPort = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".CtrlPort")
 
 	rdma.AddPort("RDMARequestInside", rdma.RDMARequestInside)
-	rdma.AddPort("RDMARequestOutside", rdma.RDMARequestOutside)
-	rdma.AddPort("RDMADataOutside", rdma.RDMADataOutside)
 	rdma.AddPort("RDMADataInside", rdma.RDMADataInside)
 	rdma.AddPort("RDMAInvInside", rdma.RDMAInvInside)
 	rdma.AddPort("RDMAInvRspInside", rdma.RDMAInvRspInside)
+
+	// [R1] New typed wire-side ports.
+	rdma.AddPort("RDMADataReqOutside", rdma.RDMADataReqOutside)
+	rdma.AddPort("RDMADataRspOutside", rdma.RDMADataRspOutside)
+	rdma.AddPort("RDMAInvReqOutside", rdma.RDMAInvReqOutside)
+	rdma.AddPort("RDMAInvRspOutside", rdma.RDMAInvRspOutside)
+
+	// [R1 INSIDE SPLIT] new typed Inside ports.
+	rdma.AddPort("RDMADataReqInside", rdma.RDMADataReqInside)
+	rdma.AddPort("RDMADataRspInside", rdma.RDMADataRspInside)
+
 	rdma.AddPort("CtrlPort", rdma.CtrlPort)
 
 	tracing.CollectTrace(rdma, b.visTracer)

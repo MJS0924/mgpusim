@@ -28,9 +28,9 @@ type Comp struct {
 
 	deviceID           uint64
 	RDMARequestInside  sim.Port
-	RDMARequestOutside sim.Port
+	RDMARequestOutside sim.Port // [R1 LEGACY] retained as nil after R1 split; kept so any external references compile until callers migrate.
 	RDMADataInside     sim.Port
-	RDMADataOutside    sim.Port
+	RDMADataOutside    sim.Port // [R1 LEGACY] retained as nil after R1 split; replaced by the 4 typed wire-side ports below.
 	RDMAInvInside      sim.Port
 	// [ITER7 STRUCTURAL FIX] Dedicated egress for INV RSP toward local
 	// REC. Previously INV REQ and INV RSP both used RDMAInvInside,
@@ -42,6 +42,30 @@ type Comp struct {
 	// builder but never plugged in), giving INV RSP an isolated path
 	// that cannot be head-of-line blocked by INV REQ.
 	RDMAInvRspInside sim.Port
+
+	// [R1 STRUCTURAL FIX] Four typed wire-side ports replacing the
+	// previous bidirectional RDMARequestOutside / RDMADataOutside pair.
+	// In iter18 a single RDMADataOutside.outgoingBuf observed 1583/4096
+	// mixing three outbound types (sendRspFromL2 AccessRsp + sendInvReq
+	// InvReq + sendInvRsp InvRsp). Mixing these three at one port lets a
+	// stalled type head-of-line-block the other two and starve the peer's
+	// inflight-cap drains. Each direction × type now has its own port:
+	//   RDMADataReqOutside: AccessReq egress / peer's AccessReq ingress
+	//   RDMADataRspOutside: AccessRsp egress / peer's AccessRsp ingress
+	//   RDMAInvReqOutside:  InvReq    egress / peer's InvReq    ingress
+	//   RDMAInvRspOutside:  InvRsp    egress / peer's InvRsp    ingress
+	RDMADataReqOutside sim.Port
+	RDMADataRspOutside sim.Port
+	RDMAInvReqOutside  sim.Port
+	RDMAInvRspOutside  sim.Port
+
+	// [R1 INSIDE SPLIT] Paired Inside ports for typed traffic from local REC.
+	// REC pushes outgoing AccessReq → RDMADataReqInside, outgoing AccessRsp →
+	// RDMADataRspInside. Legacy RDMARequestInside / RDMADataInside aliases
+	// remain populated to the same underlying ports for backward compat with
+	// any non-migrated caller; r9nano builder uses the new names directly.
+	RDMADataReqInside sim.Port
+	RDMADataRspInside sim.Port
 
 	reqFromL1Buf   []sim.Msg
 	procInvReqBuf  []sim.Msg
@@ -174,45 +198,50 @@ func (c *Comp) Tick() bool {
 		}
 	}
 
+	// [R1] RSP handlers run before REQ handlers. RSPs unblock peer inflight
+	// caps; REQs add new pressure. Within RSP vs REQ the two typed paths
+	// (DATA and INV) are fully independent — they peek their own ports and
+	// share no gating buffer.
+
+	// --- Outbound RSPs (local L2 -> peer) ---
 	for i := 0; i < c.outgoingRspPerCycle; i++ {
-		temp = c.processFromL2() // 3. Rsp. from RDMADataInside -> Rsp. to corresponding req.Src
+		temp = c.processFromL2() // local AccessRsp -> RDMADataRspOutside
 		madeProgress = temp || madeProgress
-		if c.printReturn {
-			fmt.Printf("[DEBUG RDMA 5]\treturn 4: %v\n", temp)
-		}
 	}
 
+	// --- Inbound RSPs (peer -> local consumer) ---
 	for i := 0; i < c.incomingRspPerCycle; i++ {
-		temp = c.processIncomingRsp() // 4. Rsp. from RDMARequestOutside -> Rsp. to corresponding req.Src
+		temp = c.processIncomingDataRsp() // peer AccessRsp at RDMADataRspOutside
 		madeProgress = temp || madeProgress
-		if c.printReturn {
-			fmt.Printf("[DEBUG RDMA 5]\treturn 6: %v\n", temp)
-		}
+	}
+	for i := 0; i < c.incomingRspPerCycle; i++ {
+		temp = c.processIncomingInvRsp() // peer InvRsp at RDMAInvRspOutside
+		madeProgress = temp || madeProgress
 	}
 
-	for i := 0; i < c.outgoingReqPerCycle; i++ {
-		temp = c.processFromL1() // 1. Req. from RDMARequestInside -> RDMARequestOutside
-		madeProgress = temp || madeProgress
-		if c.printReturn {
-			fmt.Printf("[DEBUG RDMA 5]\treturn 3: %v\n", temp)
-		}
-	}
-
-	for i := 0; i < c.incomingReqPerCycle; i++ {
-		temp = c.processIncomingReq() // 2. Req. from RDMADataOutside -> Req. to RDMADataInside
-		madeProgress = temp || madeProgress
-		if c.printReturn {
-			fmt.Printf("[DEBUG RDMA 5]\treturn 5: %v\n", temp)
-		}
-	}
-
-	// [ITER7] Drain dedicated INV RSP path FIRST (response priority),
-	// before INV REQ. RSPs unblock peer caps; REQs add new work.
+	// [ITER7] Dedicated INV RSP path from local REC toward peer.
 	for i := 0; i < c.outgoingRspPerCycle; i++ {
 		temp = c.processFromInvRspInside()
 		madeProgress = temp || madeProgress
 	}
 
+	// --- Outbound REQs (local L1 -> peer) ---
+	for i := 0; i < c.outgoingReqPerCycle; i++ {
+		temp = c.processFromL1() // local AccessReq -> RDMADataReqOutside
+		madeProgress = temp || madeProgress
+	}
+
+	// --- Inbound REQs (peer -> local consumer) ---
+	for i := 0; i < c.incomingReqPerCycle; i++ {
+		temp = c.processIncomingDataReq() // peer AccessReq at RDMADataReqOutside
+		madeProgress = temp || madeProgress
+	}
+	for i := 0; i < c.incomingReqPerCycle; i++ {
+		temp = c.processIncomingInvReq() // peer InvReq at RDMAInvReqOutside
+		madeProgress = temp || madeProgress
+	}
+
+	// [ITER7] InvInside intake from local directory (outbound InvReq).
 	for i := 0; i < c.outgoingRspPerCycle; i++ {
 		temp = c.processFromInvInside()
 		madeProgress = temp || madeProgress
@@ -303,15 +332,20 @@ func (c *Comp) drainRDMA() bool {
 
 	for c.RDMADataInside.RetrieveIncoming() != nil {
 	}
-	for c.RDMADataOutside.RetrieveIncoming() != nil {
-	}
 	for c.RDMARequestInside.RetrieveIncoming() != nil {
-	}
-	for c.RDMARequestOutside.RetrieveIncoming() != nil {
 	}
 	for c.RDMAInvInside.RetrieveIncoming() != nil {
 	}
 	for c.RDMAInvRspInside.RetrieveIncoming() != nil {
+	}
+	// [R1] drain the 4 typed wire-side ports.
+	for c.RDMADataReqOutside.RetrieveIncoming() != nil {
+	}
+	for c.RDMADataRspOutside.RetrieveIncoming() != nil {
+	}
+	for c.RDMAInvReqOutside.RetrieveIncoming() != nil {
+	}
+	for c.RDMAInvRspOutside.RetrieveIncoming() != nil {
 	}
 
 	c.reqFromL1Buf = nil
@@ -339,7 +373,10 @@ func (c *Comp) processFromL1() bool {
 	for {
 		if len(c.reqFromL1Buf) > 0 {
 			item := c.reqFromL1Buf[0]
-			err := c.RDMARequestOutside.Send(item)
+			// [R1] Egress on the typed DATA-REQ port. Src was already set
+			// to RDMADataReqOutside.AsRemote() at processReqFromL1; using
+			// any other port would panic "sending port is not msg src".
+			err := c.RDMADataReqOutside.Send(item)
 
 			if err == nil {
 				c.reqFromL1Buf = c.reqFromL1Buf[1:]
@@ -385,15 +422,17 @@ func (c *Comp) processReqFromL1(
 ) bool {
 	dst := c.RemoteRDMAAddressTable.Find(req.GetAddress())
 	cloned := c.cloneReq(req)
-	cloned.Meta().Src = c.RDMARequestOutside.AsRemote()
+	// [R1] Egress on the typed DATA-REQ port. RemoteRDMAAddressTable was
+	// updated to map to peer's RDMADataReqOutside in the platform builder.
+	cloned.Meta().Src = c.RDMADataReqOutside.AsRemote()
 	cloned.Meta().Dst = dst
 	cloned.SetSrcRDMA(cloned.Meta().Src)
 
 	err := (*sim.SendError)(nil)
-	if !c.RDMARequestOutside.CanSend() {
+	if !c.RDMADataReqOutside.CanSend() {
 		c.reqFromL1Buf = append(c.reqFromL1Buf, cloned)
 	} else {
-		err = c.RDMARequestOutside.Send(cloned)
+		err = c.RDMADataReqOutside.Send(cloned)
 	}
 
 	if err != nil {
@@ -440,8 +479,8 @@ func (c *Comp) processRspFromL2(
 	rsp mem.AccessRsp,
 ) bool {
 	c.returnFalse1 = "[processRspFromL2]"
-	if !c.RDMADataOutside.CanSend() {
-		c.returnFalse1 = "[processRspFromL2] Cannot send to RDMADataOutside"
+	if !c.RDMADataRspOutside.CanSend() {
+		c.returnFalse1 = "[processRspFromL2] Cannot send to RDMADataRspOutside"
 		return false
 	}
 
@@ -460,12 +499,17 @@ func (c *Comp) processRspFromL2(
 
 	// rspToOutside := c.cloneRsp(rsp, trans.fromOutside.Meta().ID)
 	rspToOutside := c.cloneRsp(rsp, trans.fromOutside.Meta().ID, trans.fromOutside.(mem.AccessReq).GetAddress())
-	rspToOutside.Meta().Src = c.RDMADataOutside.AsRemote()
-	rspToOutside.Meta().Dst = trans.fromOutside.Meta().Src
+	rspToOutside.Meta().Src = c.RDMADataRspOutside.AsRemote()
+	// [R1] Original incoming REQ arrived from peer's RDMADataReqOutside.
+	// Route the response into peer's typed RSP-ingress port so it cannot
+	// be head-of-line blocked behind queued REQs at peer's REQ port.
+	rspDst := string(trans.fromOutside.Meta().Src)
+	rspToOutside.Meta().Dst = sim.RemotePort(
+		strings.Replace(rspDst, ".RDMADataReqOutside", ".RDMADataRspOutside", 1))
 
-	err := c.RDMADataOutside.Send(rspToOutside)
+	err := c.RDMADataRspOutside.Send(rspToOutside)
 	if err != nil {
-		c.returnFalse1 = "[processRspFromL2] Failed to send to RDMADataOutside"
+		c.returnFalse1 = "[processRspFromL2] Failed to send to RDMADataRspOutside"
 		return false
 	}
 	c.RDMADataInside.RetrieveIncoming()
@@ -491,33 +535,16 @@ func (c *Comp) processRspFromL2(
 
 }
 
-func (c *Comp) processIncomingRsp() bool {
-	madeProgress := false
-	popInvReqBuf := false
-
-	if len(c.procInvReqBuf) > 0 {
-		item := c.procInvReqBuf[0]
-		// [ITER5 BUG FIX] procInvReqBuf holds InvReq messages whose
-		// Src was set to RDMAInvInside.AsRemote() at processInvReq
-		// (line 595). Sending via RDMADataInside therefore panics
-		// "sending port is not msg src". Use the matching port.
-		// Exposed by iter4's higher cross-GPU throughput which makes
-		// RDMAInvInside.CanSend()=false more frequent.
-		err := c.RDMAInvInside.Send(item)
-		if err == nil {
-			c.procInvReqBuf = c.procInvReqBuf[1:]
-
-			madeProgress = true
-			popInvReqBuf = true
-		}
-	}
-
-	req := c.RDMARequestOutside.PeekIncoming()
+// [R1] processIncomingDataRsp peeks the dedicated RDMADataRspOutside port.
+// Replaces half of the old processIncomingRsp which multiplexed AccessRsp
+// and InvReq on a single RDMARequestOutside port. With the split,
+// downstream INV REQ backlog can no longer head-of-line block AccessRsp
+// delivery to the originating L1.
+func (c *Comp) processIncomingDataRsp() bool {
+	req := c.RDMADataRspOutside.PeekIncoming()
 	if req == nil {
-		if !madeProgress {
-			c.returnFalse3 = "There is no req from RDMARequestOutside"
-		}
-		return madeProgress
+		c.returnFalse3 = "There is no rsp from RDMADataRspOutside"
+		return false
 	}
 
 	switch req := req.(type) {
@@ -525,15 +552,49 @@ func (c *Comp) processIncomingRsp() bool {
 		ret := c.processRspFromRDMARequestOutside(req)
 		if ret {
 			c.recordMsgSend(req)
-			madeProgress = true
 			if c.debugProcess && req.GetOrigin().GetAddress() == c.debugAddress {
 				fmt.Printf("[%s] [bottomSender]\tReceive remote read rsp - 3: addr %x\n", c.Name(), req.GetOrigin().GetAddress())
 			}
+			return true
 		}
+		c.returnFalse3 = "[processRspFromRDMARequestOutside]"
+		return false
+	default:
+		log.Panicf("unexpected type at RDMADataRspOutside: %s", reflect.TypeOf(req))
+		return false
+	}
+}
 
-		if !madeProgress {
-			c.returnFalse3 = "[processRspFromRDMARequestOutside]"
+// [R1] processIncomingInvReq peeks the dedicated RDMAInvReqOutside port.
+// The InvReq buffering buffer (procInvReqBuf) is preserved because the
+// downstream RDMAInvInside.CanSend() can still false momentarily (local
+// directory backpressure) and we must not drop the peer's InvReq.
+func (c *Comp) processIncomingInvReq() bool {
+	madeProgress := false
+	popInvReqBuf := false
+
+	if len(c.procInvReqBuf) > 0 {
+		item := c.procInvReqBuf[0]
+		// [ITER5 BUG FIX] procInvReqBuf holds InvReq messages whose Src
+		// was set to RDMAInvInside.AsRemote() at processInvReq. Use the
+		// matching port to avoid "sending port is not msg src" panic.
+		err := c.RDMAInvInside.Send(item)
+		if err == nil {
+			c.procInvReqBuf = c.procInvReqBuf[1:]
+			madeProgress = true
+			popInvReqBuf = true
 		}
+	}
+
+	req := c.RDMAInvReqOutside.PeekIncoming()
+	if req == nil {
+		if !madeProgress {
+			c.returnFalse3 = "There is no req from RDMAInvReqOutside"
+		}
+		return madeProgress
+	}
+
+	switch req := req.(type) {
 	case *mem.InvReq:
 		if !popInvReqBuf {
 			ret := c.processInvReq(req)
@@ -547,7 +608,7 @@ func (c *Comp) processIncomingRsp() bool {
 			}
 		}
 	default:
-		log.Panicf("cannot process request of type %s", reflect.TypeOf(req))
+		log.Panicf("unexpected type at RDMAInvReqOutside: %s", reflect.TypeOf(req))
 		return false
 	}
 
@@ -598,7 +659,10 @@ func (c *Comp) processRspFromRDMARequestOutside(
 		return false
 	}
 
-	c.RDMARequestOutside.RetrieveIncoming()
+	// [R1 BUGFIX] Drain from the typed peer-side RSP port — legacy
+	// RDMARequestOutside is nil after R1 split (peer data RSP arrives at
+	// RDMADataRspOutside).
+	c.RDMADataRspOutside.RetrieveIncoming()
 
 	if transactionIndex != -1 {
 		c.transactionsFromInside =
@@ -635,7 +699,9 @@ func (c *Comp) processInvReq(
 		err = c.RDMAInvInside.Send(reqToBottom)
 	}
 	if err == nil {
-		c.RDMARequestOutside.RetrieveIncoming()
+		// [R1 BUGFIX] InvReq arrives via the typed RDMAInvReqOutside —
+		// legacy RDMARequestOutside is nil after R1 split.
+		c.RDMAInvReqOutside.RetrieveIncoming()
 		c.invalidationFromOutside = append(c.invalidationFromOutside, req)
 
 		// fmt.Printf("[%s]\tC. (%s -> %s) Send InvReq for Addr %x from %s to %s\n",
@@ -678,10 +744,12 @@ func (c *Comp) recordAccessCount(
 	return true
 }
 
-func (c *Comp) processIncomingReq() bool {
+// [R1] processIncomingDataReq peeks RDMADataReqOutside (peer's AccessReq
+// ingress). Replaces half of the old processIncomingReq which
+// multiplexed AccessReq and InvRsp on a single RDMADataOutside port.
+func (c *Comp) processIncomingDataReq() bool {
 	madeProgress := false
 	popIncomingReqBuf := false
-	popProcInvRspBuf := false
 
 	if len(c.incomingReqBuf) > 0 {
 		item := c.incomingReqBuf[0]
@@ -693,25 +761,10 @@ func (c *Comp) processIncomingReq() bool {
 		}
 	}
 
-	if len(c.procInvRspBuf) > 0 {
-		item := c.procInvRspBuf[0]
-		// [ITER7] Use RDMAInvRspInside (not RDMADataInside) since
-		// procInvRspBuf items were queued by processInvRsp with
-		// Src=RDMAInvRspInside.AsRemote(). Sending via RDMADataInside
-		// would panic "sending port is not msg src" (analogous to
-		// the iter5 procInvReqBuf bug, just on the RSP side).
-		err := c.RDMAInvRspInside.Send(item)
-		if err == nil {
-			c.procInvRspBuf = c.procInvRspBuf[1:]
-			madeProgress = true
-			popProcInvRspBuf = true
-		}
-	}
-
-	req := c.RDMADataOutside.PeekIncoming()
+	req := c.RDMADataReqOutside.PeekIncoming()
 	if req == nil {
 		if !madeProgress {
-			c.returnFalse2 = "There is no req from RDMADataOutside"
+			c.returnFalse2 = "There is no req from RDMADataReqOutside"
 		}
 		return madeProgress
 	}
@@ -728,10 +781,44 @@ func (c *Comp) processIncomingReq() bool {
 			}
 
 			if !madeProgress {
-
 				c.returnFalse2 = "[processReqFromRDMADataOutside]"
 			}
 		}
+	default:
+		log.Panicf("unexpected type at RDMADataReqOutside: %s", reflect.TypeOf(req))
+		return false
+	}
+
+	return madeProgress
+}
+
+// [R1] processIncomingInvRsp peeks RDMAInvRspOutside (peer's InvRsp
+// ingress). Replaces the InvRsp branch of the old processIncomingReq.
+func (c *Comp) processIncomingInvRsp() bool {
+	madeProgress := false
+	popProcInvRspBuf := false
+
+	if len(c.procInvRspBuf) > 0 {
+		item := c.procInvRspBuf[0]
+		// [ITER7] Use RDMAInvRspInside (not RDMADataInside) — procInvRspBuf
+		// items were queued by processInvRsp with Src=RDMAInvRspInside.
+		err := c.RDMAInvRspInside.Send(item)
+		if err == nil {
+			c.procInvRspBuf = c.procInvRspBuf[1:]
+			madeProgress = true
+			popProcInvRspBuf = true
+		}
+	}
+
+	req := c.RDMAInvRspOutside.PeekIncoming()
+	if req == nil {
+		if !madeProgress {
+			c.returnFalse2 = "There is no rsp from RDMAInvRspOutside"
+		}
+		return madeProgress
+	}
+
+	switch req := req.(type) {
 	case *mem.InvRsp:
 		if !popProcInvRspBuf {
 			ret := c.processInvRsp(req)
@@ -741,11 +828,11 @@ func (c *Comp) processIncomingReq() bool {
 			}
 
 			if !madeProgress {
-				c.returnFalse2 = "[processReqFromRDMADataOutside]"
+				c.returnFalse2 = "[processInvRsp]"
 			}
 		}
 	default:
-		log.Panicf("cannot process request of type %s", reflect.TypeOf(req))
+		log.Panicf("unexpected type at RDMAInvRspOutside: %s", reflect.TypeOf(req))
 		return false
 	}
 
@@ -758,18 +845,22 @@ func (c *Comp) processReqFromRDMADataOutside(
 	dst := c.localModules.Find(req.GetAddress())
 
 	cloned := c.cloneReq(req)
-	cloned.Meta().Src = c.RDMADataInside.AsRemote()
+	// [R1 BUGFIX] Use the typed Inside REQ port — paired with R2's REC
+	// RDMADataReqPort via the shared RDMAToCohDir directconnection.
+	cloned.Meta().Src = c.RDMADataReqInside.AsRemote()
 	cloned.Meta().Dst = dst
 
 	err := (*sim.SendError)(nil)
-	if !c.RDMADataInside.CanSend() {
+	if !c.RDMADataReqInside.CanSend() {
 		c.incomingReqBuf = append(c.incomingReqBuf, cloned)
 	} else {
-		err = c.RDMADataInside.Send(cloned)
+		err = c.RDMADataReqInside.Send(cloned)
 	}
 
 	if err == nil {
-		c.RDMADataOutside.RetrieveIncoming()
+		// [R1 BUGFIX] Drain from the typed peer-side port, not the legacy
+		// nil RDMADataOutside.
+		c.RDMADataReqOutside.RetrieveIncoming()
 
 		trans := transaction{
 			fromOutside: req,
@@ -793,7 +884,8 @@ func (c *Comp) processInvRsp(
 	i := c.findInvReqByRspToID(rsp.RespondTo, c.invalidationFromInside)
 	if i == -1 {
 		fmt.Printf("[RDMA %d]\t3. Cannot find invalidation request for InvRsp with RespondTo %s\n", c.deviceID, rsp.RespondTo)
-		c.RDMADataOutside.RetrieveIncoming()
+		// [R1] Inbound peer InvRsp now arrives on RDMAInvRspOutside.
+		c.RDMAInvRspOutside.RetrieveIncoming()
 		// return false
 		return true
 	}
@@ -823,7 +915,8 @@ func (c *Comp) processInvRsp(
 	}
 
 	if err == nil {
-		c.RDMADataOutside.RetrieveIncoming()
+		// [R1] Inbound peer InvRsp arrived on RDMAInvRspOutside.
+		c.RDMAInvRspOutside.RetrieveIncoming()
 		c.invalidationFromInside = append(c.invalidationFromInside[:i], c.invalidationFromInside[i+1:]...)
 		// fmt.Printf("[RDMA %d]\tFinalize Inv Req - 2: %s -> %s, %s\n", c.deviceID, rsp.RespondTo, req.ReqFrom, rspToBottom.Dst)
 
@@ -848,14 +941,10 @@ func (c *Comp) processFromInvInside() bool {
 		return false
 
 	case *mem.InvRsp:
-		// [ITER7] Defensive: with the iter7 wiring, REC sends RSPs
-		// via the new RDMAInvRspInside. This branch only fires for
-		// legacy paths (during the transition).
-		if c.sendInvRsp(req) {
-			c.recordMsgSend(req)
-			return true
-		}
-		return false
+		// [ITER7 contract] InvRsp must arrive on RDMAInvRspInside, not
+		// RDMAInvInside. The legacy transitional path is gone — any
+		// InvRsp arriving here is a wiring contract violation.
+		panic("InvRsp must arrive on RDMAInvRspInside")
 
 	default:
 		panic(fmt.Sprintf("unknown req type in RDMAInvInside: %s", reflect.TypeOf(req)))
@@ -886,15 +975,16 @@ func (c *Comp) processFromInvRspInside() bool {
 func (c *Comp) sendInvReq(
 	req *mem.InvReq,
 ) bool {
-	if !c.RDMADataOutside.CanSend() {
-		// if c.deviceID == 5 {
-		// 	fmt.Printf("[RDMA 5]\tReturn false: sendInvReq: Cannot send to RDMADataOutside 1\n")
-		// }
+	// [R1] InvReq egress on the dedicated typed port. Previously this
+	// shared RDMADataOutside with sendRspFromL2 + sendInvRsp; an INV
+	// REQ backlog (iter18: 1583/4096) head-of-line blocked AccessRsp
+	// and InvRsp egress, starving peer caps.
+	if !c.RDMAInvReqOutside.CanSend() {
 		return false
 	}
 
 	reqToOutside := mem.InvReqBuilder{}.
-		WithSrc(c.RDMADataOutside.AsRemote()).
+		WithSrc(c.RDMAInvReqOutside.AsRemote()).
 		WithDst(req.DstRDMA).
 		WithPID(req.PID).
 		WithAddress(req.Address).
@@ -904,29 +994,23 @@ func (c *Comp) sendInvReq(
 		WithIsWriteInv(req.IsWriteInv).
 		Build()
 
-	err := c.RDMADataOutside.Send(reqToOutside)
+	err := c.RDMAInvReqOutside.Send(reqToOutside)
 	if err == nil {
 		c.RDMAInvInside.RetrieveIncoming()
 		c.invalidationFromInside = append(c.invalidationFromInside, req)
-
-		// fmt.Printf("[%s]\tB. (%s -> %s) Send InvReq for Addr %x from %s to %s\n",
-		// 	c.Name(), req.Meta().ID, reqToOutside.Meta().ID, req.Address, req.Meta().Src, reqToOutside.Meta().Dst)
 		return true
 	}
 
-	// if c.deviceID == 5 {
-	// 	fmt.Printf("[RDMA 5]\tReturn false: sendInvReq: Cannot send to RDMADataOutside 2\n")
-	// }
 	return false
 }
 
 func (c *Comp) sendInvRsp(
 	rsp *mem.InvRsp,
 ) bool {
-	if !c.RDMADataOutside.CanSend() {
-		// if c.deviceID == 5 {
-		// 	fmt.Printf("[RDMA 5]\tReturn false: sendInvRsp: Cannot send to RDMADataOutside 1 \n")
-		// }
+	// [R1] InvRsp egress on the dedicated typed port. Previously this
+	// shared RDMADataOutside with AccessRsp + InvReq; under heavy
+	// invalidation traffic this was the head-of-line block.
+	if !c.RDMAInvRspOutside.CanSend() {
 		return false
 	}
 
@@ -934,30 +1018,35 @@ func (c *Comp) sendInvRsp(
 	if i == -1 {
 		fmt.Printf("[RDMA %d]\t2. Cannot find invalidation request for InvRsp with RespondTo %s\n", c.deviceID, rsp.RespondTo)
 		c.RDMAInvInside.RetrieveIncoming()
-		// return false
 		return true
 	}
 	req := c.invalidationFromOutside[i]
 
+	// [R1] req.Meta().Src here is the peer's RDMAInvReqOutside (set by
+	// peer's sendInvReq). Reroute Dst to peer's typed RDMAInvRspOutside
+	// so the response cannot be head-of-line blocked behind queued REQs
+	// at peer's REQ port.
+	rspDst := string(req.Meta().Src)
+	rspDst = strings.Replace(rspDst, ".RDMAInvReqOutside", ".RDMAInvRspOutside", 1)
+
 	rspToOutside := mem.InvRspBuilder{}.
-		WithSrc(c.RDMADataOutside.AsRemote()).
-		WithDst(req.Meta().Src).
+		WithSrc(c.RDMAInvRspOutside.AsRemote()).
+		WithDst(sim.RemotePort(rspDst)).
 		WithRspTo(req.ReqFrom).
-		WithSrcRDMA(c.RDMARequestOutside.AsRemote()).
+		// [R1] SrcRDMA was previously RDMARequestOutside (a logical
+		// peer-RDMA identifier used by some directory logic). With the
+		// split, RDMADataReqOutside is the equivalent stable identifier
+		// for this RDMA's data-request egress.
+		WithSrcRDMA(c.RDMADataReqOutside.AsRemote()).
 		Build()
 
-	err := c.RDMADataOutside.Send(rspToOutside)
+	err := c.RDMAInvRspOutside.Send(rspToOutside)
 	if err == nil {
 		c.RDMAInvInside.RetrieveIncoming()
 		c.invalidationFromOutside = append(c.invalidationFromOutside[:i], c.invalidationFromOutside[i+1:]...)
-		// fmt.Printf("[RDMA %d]\tFinalize Inv Req - 1: %s -> %s\n", c.deviceID, rsp.RespondTo, req.ReqFrom)
-
 		return true
 	}
 
-	// if c.deviceID == 5 {
-	// 	fmt.Printf("[RDMA 5]\tReturn false: sendInvRsp: Cannot send to RDMADataOutside 2\n")
-	// }
 	return false
 }
 

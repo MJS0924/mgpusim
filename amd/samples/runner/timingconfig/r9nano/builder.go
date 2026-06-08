@@ -420,8 +420,21 @@ func (b Builder) Build(name string) *sim.Domain {
 
 func (b *Builder) populateExternalPorts() {
 	b.gpu.AddPort("CommandProcessor", b.cp.ToDriver)
-	b.gpu.AddPort("RDMARequest", b.rdmaEngine.RDMARequestOutside)
-	b.gpu.AddPort("RDMAData", b.rdmaEngine.RDMADataOutside)
+
+	// [R1] Four typed wire-side ports. Each direction × type has a
+	// dedicated external port so the inter-GPU NVLink fabric can route
+	// every message class independently and a stalled class can no
+	// longer head-of-line block the others.
+	b.gpu.AddPort("RDMADataReq", b.rdmaEngine.RDMADataReqOutside)
+	b.gpu.AddPort("RDMADataRsp", b.rdmaEngine.RDMADataRspOutside)
+	b.gpu.AddPort("RDMAInvReq", b.rdmaEngine.RDMAInvReqOutside)
+	b.gpu.AddPort("RDMAInvRsp", b.rdmaEngine.RDMAInvRspOutside)
+
+	// [R1] Legacy aliases removed — they aliased two names to the same
+	// underlying RDMADataReqOutside port which caused InterGPU's PlugIn
+	// to call SetConnection twice on the same port (panic). Any caller
+	// using "RDMARequest" / "RDMAData" must migrate to the typed names
+	// "RDMADataReq" / "RDMADataRsp" / "RDMAInvReq" / "RDMAInvRsp".
 
 	b.gpu.AddPort("PageMigrationController",
 		b.pmc.GetPortByName("Remote"))
@@ -493,12 +506,28 @@ func (b *Builder) connectL1ToCohDir() {
 		WithFreq(b.freq).
 		Build(b.name + ".RDMAToCohDirForInvRsp")
 
+	// [R2 BUGFIX] All typed data ports share the SAME directconnection
+	// (RDMAToCohDir).  Per-message-type ports give us HoL-free incomingBuf
+	// at REC; the directconnection just routes by Dst name. Separate
+	// connections would require RSP routing to find the original REQ's
+	// Src port in its registry — which fails because that port is on the
+	// other connection. One connection with all ports plugged makes lookup
+	// work for any (Src, Dst) pair.
 	RDMAToCohDir.PlugIn(b.rdmaEngine.RDMADataInside)
 	RDMAToCohDirForInv.PlugIn(b.rdmaEngine.RDMAInvInside)
 	RDMAToCohDirForInvRsp.PlugIn(b.rdmaEngine.RDMAInvRspInside)
+	// [R2] New typed Inside ports — share RDMAToCohDir so REC's RSP from
+	// RDMADataRspPort with Dst=RDMA.RDMADataReqInside routes correctly.
+	RDMAToCohDir.PlugIn(b.rdmaEngine.RDMADataReqInside)
+	RDMAToCohDir.PlugIn(b.rdmaEngine.RDMADataRspInside)
 
 	if b.coherenceDirectory == 0 { // coherenceDirectory
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
+		// D4 (ported from SD): plug the L1-facing dedicated InvRsp
+		// ingress into the same L1ToCohDir directconnection. Any L1
+		// InvRsp addressed to this port reaches the directory without
+		// being head-blocked by a stalled ReadReq at topPort.
+		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("TopInvRsp"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 		// Fix: plug RDMAInvRsp for all variants whose directory builder
@@ -507,18 +536,29 @@ func (b *Builder) connectL1ToCohDir() {
 		// even in CD-only sweeps; without the plug, directconnection
 		// panics: "port GPU[X].CohDir.RDMAInvRspPort not found".
 		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
+		// S1 (ported from SD): plug the new InvRsp egress port into
+		// the same RDMAToCohDirForInvRsp connection so outbound InvRsp
+		// reaches RDMA's RDMAInvRspInside without competing with InvReq
+		// egress (RDMA's processFromInvInside panics on InvRsp).
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRspOut"))
 
 	} else if b.coherenceDirectory == 1 { // large block cache
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
+		// D4 / S1: see comments in branch 0.
+		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("TopInvRsp"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRspOut"))
 
 	} else if b.coherenceDirectory == 2 { // superDirectory
 		l1ToCohDir.PlugIn(b.superDir.GetPortByName("Top"))
+		// D4 / S1: L1-facing InvRsp ingress + RDMA-facing InvRsp egress.
+		l1ToCohDir.PlugIn(b.superDir.GetPortByName("TopInvRsp"))
 		RDMAToCohDir.PlugIn(b.superDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.superDir.GetPortByName("RDMAInv"))
 		RDMAToCohDirForInvRsp.PlugIn(b.superDir.GetPortByName("RDMAInvRsp"))
+		RDMAToCohDirForInvRsp.PlugIn(b.superDir.GetPortByName("RDMAInvRspOut"))
 
 	} else if b.coherenceDirectory == 3 { // REC
 		l1ToCohDir.PlugIn(b.recDir.GetPortByName("Top"))
@@ -528,12 +568,21 @@ func (b *Builder) connectL1ToCohDir() {
 		// builder but previously left unplugged) to the dedicated
 		// inv-rsp link.
 		RDMAToCohDirForInvRsp.PlugIn(b.recDir.GetPortByName("RDMAInvRsp"))
+		// [R2] Plug REC's split data ports into the SHARED RDMAToCohDir
+		// (along with R1's RDMADataReqInside/RspInside on the RDMA side).
+		// Single connection lets the directory's RSP from RDMADataRspPort
+		// reach RDMA's RDMADataReqInside (the Src of the original REQ).
+		RDMAToCohDir.PlugIn(b.recDir.GetPortByName("RDMADataReq"))
+		RDMAToCohDir.PlugIn(b.recDir.GetPortByName("RDMADataRsp"))
 
 	} else if b.coherenceDirectory == 4 { // HMG
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
+		// D4 / S1: see comments in branch 0.
+		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("TopInvRsp"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
 		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRspOut"))
 
 	} else if b.coherenceDirectory == 5 { // MGD
 		l1ToCohDir.PlugIn(b.mgdDir.GetPortByName("Top"))
@@ -571,6 +620,10 @@ func (b *Builder) connectL1ToCohDir() {
 		b.recDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
 		// [ITER7] Tell REC where to send INV RSPs going outbound.
 		b.recDir.ToRDMAInvRsp = b.rdmaEngine.RDMAInvRspInside.AsRemote()
+		// [R2] Tell REC where to send peer-facing data REQ / RSP
+		// outbound (paired with R1's split RDMA outside ports).
+		b.recDir.ToRDMADataReq = b.rdmaEngine.RDMADataReqInside.AsRemote()
+		b.recDir.ToRDMADataRsp = b.rdmaEngine.RDMADataRspInside.AsRemote()
 	} else if b.coherenceDirectory == 4 { // HMG
 		b.cohDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.cohDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
@@ -1197,9 +1250,19 @@ func (b *Builder) buildCoherenceDirectory() {
 			b.l1AddressMapper.LowModules,
 			dir.GetPortByName("Top").AsRemote(),
 		)
+		// [R2 BUGFIX] Use the typed RDMADataReq port — peer-incoming
+		// AccessReq from RDMA must route via RDMADataReqPort (paired with
+		// rdma.RDMADataReqInside on RDMAToCohDirForDataReq). The legacy
+		// RDMAPort is still allocated for backward references, but the
+		// rdmaLowModuleFinder must point at the typed REQ port so
+		// directconnection.forwardMany can resolve the Dst against the
+		// matching ports registry. Using the legacy "RDMA" name set the
+		// Dst to RECDir.RDMAPort, which is plugged into RDMAToCohDir
+		// (different directconnection) and not into RDMAToCohDirForDataReq
+		// → "port not found" panic when peer AccessReq arrives.
 		b.rdmaLowModuleFinder.LowModules = append(
 			b.rdmaLowModuleFinder.LowModules,
-			dir.GetPortByName("RDMA").AsRemote(),
+			dir.GetPortByName("RDMADataReq").AsRemote(),
 		)
 		b.rdmaInvLowModuleFinder.LowModules = append(
 			b.rdmaInvLowModuleFinder.LowModules,
