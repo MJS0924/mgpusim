@@ -1456,6 +1456,27 @@ func (r *reporter) injectWindowSnapshotter(s *simulation.Simulation) {
 	})
 	snap.dirUtilProviders = providers
 
+	// [SD BANK-LEVEL METRICS] Collect superdirectory components that
+	// expose the per-bank stats interface. SD-only — REC and CD
+	// optdirectory do not implement these methods and are skipped.
+	var sdProviders []sdBankStatsProvider
+	for _, comp := range s.Components() {
+		if p, ok := comp.(sdBankStatsProvider); ok {
+			if strings.Contains(p.Name(), "SuperDir") {
+				sdProviders = append(sdProviders, p)
+			}
+		}
+	}
+	sort.Slice(sdProviders, func(i, j int) bool {
+		return sdProviders[i].Name() < sdProviders[j].Name()
+	})
+	snap.sdBankStatsProviders = sdProviders
+	if len(sdProviders) > 0 {
+		fmt.Printf("[per-window] SD bank-stats providers: %d (numBanks=%d → %d per-bank cols)\n",
+			len(sdProviders), sdProviders[0].NumBanks(),
+			len(sdProviders)*sdProviders[0].NumBanks()*6)
+	}
+
 	if err := snap.open(); err != nil {
 		fmt.Printf("[per-window] WARNING: could not open CSV: %v\n", err)
 		return

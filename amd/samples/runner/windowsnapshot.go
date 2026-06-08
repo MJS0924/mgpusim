@@ -40,6 +40,24 @@ type sharerHeatmapProvider interface {
 	CloseSharerHeatmap()
 }
 
+// sdBankStatsProvider is implemented by superdirectory.Comp. The runner
+// captures per-bank promote/demote counts and entry-activity metrics
+// at every window boundary so SD's bank-level hierarchy dynamics are
+// visible in the per-window CSV alongside the aggregate dir_util/
+// coverage columns.
+type sdBankStatsProvider interface {
+	Name() string
+	NumBanks() int
+	PerBankPromoteCounts() []uint64
+	PerBankDemoteCounts() []uint64
+	PerBankValidEntries() []int
+	PerBankMaxEntries() []int
+	PerBankValidSubEntries() []int
+	PerBankUtilization() []float64
+	CoverageByBank() []int
+	MaxCoverageByBank() []int
+}
+
 // windowSnapshotter captures cumulative metrics at every N-instruction boundary.
 // It implements tracing.Tracer so it can be attached directly to compute units.
 // All snapshot state is guarded by mu for parallel-engine safety.
@@ -64,6 +82,11 @@ type windowSnapshotter struct {
 	// Empty unless -coalescability-heatmap is enabled.
 	sharerHeatmapProviders []sharerHeatmapProvider
 	sharerHeatmapDir       string
+
+	// per-GPU superdirectory components. Empty for non-SD variants.
+	// Populated by injectWindowSnapshotter via type assertion on the
+	// same component list used for dirUtilProviders.
+	sdBankStatsProviders []sdBankStatsProvider
 
 	outPath string
 	file    *os.File
@@ -274,6 +297,29 @@ func (s *windowSnapshotter) takeSnapshot() {
 		)
 	}
 
+	// [SD BANK-LEVEL METRICS] Per-bank promote/demote counts +
+	// entry activity. Columns appended in the order
+	// (provider × bank × metric). Header in csvHeader() matches.
+	for _, p := range s.sdBankStatsProviders {
+		promote := p.PerBankPromoteCounts()
+		demote := p.PerBankDemoteCounts()
+		validEntries := p.PerBankValidEntries()
+		validSub := p.PerBankValidSubEntries()
+		util := p.PerBankUtilization()
+		coverage := p.CoverageByBank()
+		n := p.NumBanks()
+		for b := 0; b < n; b++ {
+			row = append(row,
+				fmt.Sprintf("%d", promote[b]),
+				fmt.Sprintf("%d", demote[b]),
+				fmt.Sprintf("%d", validEntries[b]),
+				fmt.Sprintf("%d", validSub[b]),
+				fmt.Sprintf("%.6f", util[b]),
+				fmt.Sprintf("%d", coverage[b]),
+			)
+		}
+	}
+
 	_ = s.writer.Write(row)
 	s.writer.Flush()
 
@@ -307,6 +353,22 @@ func (s *windowSnapshotter) csvHeader() []string {
 			"cur_dir_valid_agg",
 			"cur_dir_cachelines_agg",
 		)
+	}
+	// [SD BANK-LEVEL METRICS] Per-bank columns appended after the
+	// dir-util block. One block per provider × bank.
+	for _, p := range s.sdBankStatsProviders {
+		short := shortDirName(p.Name())
+		n := p.NumBanks()
+		for b := 0; b < n; b++ {
+			h = append(h,
+				fmt.Sprintf("cum_sd_promote_%s_bank%d", short, b),
+				fmt.Sprintf("cum_sd_demote_%s_bank%d", short, b),
+				fmt.Sprintf("cur_sd_valid_entries_%s_bank%d", short, b),
+				fmt.Sprintf("cur_sd_valid_subentries_%s_bank%d", short, b),
+				fmt.Sprintf("cur_sd_util_%s_bank%d", short, b),
+				fmt.Sprintf("cur_sd_coverage_cachelines_%s_bank%d", short, b),
+			)
+		}
 	}
 	return h
 }
