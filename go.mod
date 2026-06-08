@@ -6,6 +6,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.1
+	github.com/parquet-go/parquet-go v0.29.0
 	github.com/rs/xid v1.6.0
 	github.com/sarchlab/akita/v4 v4.7.0
 	github.com/sirupsen/logrus v1.9.3
@@ -30,7 +31,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32 // indirect
 	github.com/parquet-go/bitpack v1.0.0 // indirect
 	github.com/parquet-go/jsonlite v1.0.0 // indirect
-	github.com/parquet-go/parquet-go v0.29.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/syifan/goseth v0.1.2 // indirect

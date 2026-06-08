@@ -485,38 +485,61 @@ func (b *Builder) connectL1ToCohDir() {
 		WithFreq(b.freq).
 		Build(b.name + ".RDMAToCohDirForInv")
 
+	// [ITER7] Dedicated link for INV RSP separating it from INV REQ
+	// on the RDMA<->Directory inside path. RDMA puts INV RSP into
+	// RDMAInvRspInside; the directory's RDMAInvRspPort receives.
+	RDMAToCohDirForInvRsp := directconnection.MakeBuilder().
+		WithEngine(b.simulation.GetEngine()).
+		WithFreq(b.freq).
+		Build(b.name + ".RDMAToCohDirForInvRsp")
+
 	RDMAToCohDir.PlugIn(b.rdmaEngine.RDMADataInside)
 	RDMAToCohDirForInv.PlugIn(b.rdmaEngine.RDMAInvInside)
+	RDMAToCohDirForInvRsp.PlugIn(b.rdmaEngine.RDMAInvRspInside)
 
 	if b.coherenceDirectory == 0 { // coherenceDirectory
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		// Fix: plug RDMAInvRsp for all variants whose directory builder
+		// creates the port. Previously only REC (ITER7) had this. With
+		// L2 NumReqPerCycle=4 the inv-rsp path through RDMA is exercised
+		// even in CD-only sweeps; without the plug, directconnection
+		// panics: "port GPU[X].CohDir.RDMAInvRspPort not found".
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 1 { // large block cache
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 2 { // superDirectory
 		l1ToCohDir.PlugIn(b.superDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.superDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.superDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.superDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 3 { // REC
 		l1ToCohDir.PlugIn(b.recDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.recDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.recDir.GetPortByName("RDMAInv"))
+		// [ITER7] Plug REC's RDMAInvRsp port (always created by REC
+		// builder but previously left unplugged) to the dedicated
+		// inv-rsp link.
+		RDMAToCohDirForInvRsp.PlugIn(b.recDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 4 { // HMG
 		l1ToCohDir.PlugIn(b.cohDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.cohDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.cohDir.GetPortByName("RDMAInv"))
+		RDMAToCohDirForInvRsp.PlugIn(b.cohDir.GetPortByName("RDMAInvRsp"))
 
 	} else if b.coherenceDirectory == 5 { // MGD
 		l1ToCohDir.PlugIn(b.mgdDir.GetPortByName("Top"))
 		RDMAToCohDir.PlugIn(b.mgdDir.GetPortByName("RDMA"))
 		RDMAToCohDirForInv.PlugIn(b.mgdDir.GetPortByName("RDMAInv"))
+		// MGD doesn't have RDMAInvRsp port — skip.
 
 	}
 	// b.rdmaEngine.SetLocalModuleFinder(b.l1AddressMapper)
@@ -546,6 +569,8 @@ func (b *Builder) connectL1ToCohDir() {
 	} else if b.coherenceDirectory == 3 { // REC
 		b.recDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.recDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
+		// [ITER7] Tell REC where to send INV RSPs going outbound.
+		b.recDir.ToRDMAInvRsp = b.rdmaEngine.RDMAInvRspInside.AsRemote()
 	} else if b.coherenceDirectory == 4 { // HMG
 		b.cohDir.ToRDMA = b.rdmaEngine.RDMADataInside.AsRemote()
 		b.cohDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
@@ -1079,9 +1104,22 @@ func (b *Builder) buildCoherenceDirectory() {
 			// hierarchical lookup. Total = dirLatency + bankLatency = 18
 			// (others: 9 + 1 = 10).
 			WithDirectoryLatency(17).
-			// Phase 2 inv-emit budget — same value as CD/REC for fair
-			// cross-variant comparison.
-			WithMaxInvEmitPerCycle(2).
+			// Phase A (S1): scaled inv-emit budget. SD's multi-bank
+			// hierarchical lookup means a single incoming InvReq unrolls
+			// into 2^(regionLen-log2BlockSize) per-line InvReqs on the
+			// `sendToRemoteBottomInvQue` egress; with the previous cap=2
+			// the coarsest bank's 16-line burst held remoteBottomPort
+			// for ~8 cycles, HoL-blocking data fetches. cap=8 lets the
+			// burst drain in 2 cycles. CD/REC stay at 2 (no multi-bank
+			// unroll). See /root/.claude/plans/unit-size-gleaming-sun.md.
+			WithMaxInvEmitPerCycle(8).
+			// Phase A (S1): inflight caps doubled for SD because each
+			// InvalidateAndUpdate trans lives ~4× longer than CD due to
+			// per-line inv burst drain time. smoke test (2000x2000 iter=2)
+			// confirmed completion with stall_inflight_inv → 0 and
+			// stall_inflight_fetch reduced to 40M (sqlite cohDir_metrics).
+			WithMaxInflightFetch(256).
+			WithMaxInflightEviction(512).
 			WithAddressMapperType("interleaved").
 			WithFetchSingleCacheLine(true).
 			WithDisableRSB(b.sdDisableRSB).
@@ -1132,6 +1170,19 @@ func (b *Builder) buildCoherenceDirectory() {
 			// Phase 2 inv-emit budget — same value as CD/SD for fair
 			// cross-variant comparison.
 			WithMaxInvEmitPerCycle(2).
+			// [ITER1 FIX 20260605] REC outgoing-remote sub-cap DISABLED (0).
+			// stencil2d empirical results:
+			//   L2 outgoing cap (384) only:      sim 19.80 ms hang
+			//   L2 + REC outgoing cap (96):      sim 18.69 ms hang
+			// Adding the REC cap WORSENED the hang point by 1.1 ms —
+			// the 96 cap over-throttled REC.bottomSender's outgoing path,
+			// causing earlier saturation elsewhere. Diagnostic dump at
+			// the 18.69 ms hang shows all lost-rsp counters = 0 (so the
+			// hang is NOT an ID-matching issue) but L2/REC mostly empty
+			// while RDMA holds 1500+ outstanding transactions — over-
+			// throttling pattern. Disable; keep the L2 outgoing cap which
+			// did improve over the no-fix baseline.
+			WithMaxOutgoingRemoteInflight(0).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			// WithIdealDirectory(b.idealDirectory).
@@ -1315,7 +1366,17 @@ func (b *Builder) buildL2Caches() {
 			// CD-only experiment: temporarily reduced to 2 to test if
 			// inv-message processing becomes the bottleneck (stencil2d
 			// CD_0..8 sweep with iter=10).
-			WithNumReqPerCycle(2).
+			//
+			// Phase A/B post-mortem (2026-06-06): with NumReqPerCycle=2,
+			// the L2 remoteTopPort.incomingBuf cap = 2*2 = 4 and the
+			// topparser/dirStage process at 2 msgs/cycle. SD with
+			// MaxInvEmitPerCycle=8 saturates this immediately — that's
+			// why Phase A's cap=8 (-91% stall_inflight_fetch but kernel
+			// time unchanged) and Phase B's port split (-3% port_busy)
+			// both failed to move kernel_time. Restoring NumReqPerCycle=4
+			// returns to the SD-safe original value documented above and
+			// removes the L2 ingress as the dominant bottleneck.
+			WithNumReqPerCycle(4).
 			// Shared-pipeline inv-cost model: read/write/inv all
 			// traverse the same 2-stage directory pipeline (no
 			// dedicated snoop pipeline). This matches the more
@@ -1341,6 +1402,15 @@ func (b *Builder) buildL2Caches() {
 			WithDirectoryLatency(16).
 			WithSnoopLatency(b.invExtraLatency).
 			WithBankLatency(184).
+			// [OUTGOING-REMOTE CAP FIX] Cap per-L2 outgoing remote
+			// evictions (pending+inflight) at 384, leaving 640 wB
+			// headroom (out of 1024) for incoming-write-triggered
+			// evictions at the receiver side. With existing
+			// maxInflightEviction=128, the pending portion caps at
+			// 256, so backpressure stays on sender's dirStage
+			// long before wB reaches the full-cap that would HoL-
+			// block the receiver's incoming WriteReq path.
+			WithMaxOutgoingRemotePending(384).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask)
 

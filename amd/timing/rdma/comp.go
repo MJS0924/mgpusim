@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
@@ -31,6 +32,16 @@ type Comp struct {
 	RDMADataInside     sim.Port
 	RDMADataOutside    sim.Port
 	RDMAInvInside      sim.Port
+	// [ITER7 STRUCTURAL FIX] Dedicated egress for INV RSP toward local
+	// REC. Previously INV REQ and INV RSP both used RDMAInvInside,
+	// which sequenced RSP delivery behind any backlog of REQs queued
+	// at RDMAInvInside.outgoingBuf (observed 1569 at conv2d iter6
+	// hang). With response progress blocked by request backlog, the
+	// peer-REC.inflightInvToBottom=256 cap never drained → cycle. The
+	// new port wires to REC.RDMAInvRspPort (already created at REC
+	// builder but never plugged in), giving INV RSP an isolated path
+	// that cannot be head-of-line blocked by INV REQ.
+	RDMAInvRspInside sim.Port
 
 	reqFromL1Buf   []sim.Msg
 	procInvReqBuf  []sim.Msg
@@ -72,6 +83,19 @@ type Comp struct {
 	returnFalse1 string
 	returnFalse2 string
 	returnFalse3 string
+
+	// [RDMA INSTRUMENTATION] Silent-drop counters for diagnostic
+	// purposes. Incremented in processRspFromL2 /
+	// processRspFromRDMARequestOutside when the incoming response's
+	// RspTo fails to match any transaction in the local tracking
+	// arrays. Non-zero values point at lost responses — likely the
+	// origin of the stencil2d/conv2d REC tail-stall (engine halts
+	// with 75 WGs still in_progress because their memory acks never
+	// returned). Exposed via the monitor API.
+	lostRspFromL2Count            uint64 // processRspFromL2: outgoing rsp had no matching transactionsFromOutside
+	lostRspFromOutsideCount       uint64 // processRspFromRDMARequestOutside: incoming rsp had no matching transactionsFromInside
+	lostRspFromL2SampleID         string // last dropped RspTo ID at processRspFromL2 (newest wins)
+	lostRspFromOutsideSampleID    string // last dropped RspTo ID at processRspFromRDMARequestOutside
 
 	traceProcess bool
 	debugProcess bool
@@ -182,6 +206,13 @@ func (c *Comp) Tick() bool {
 		}
 	}
 
+	// [ITER7] Drain dedicated INV RSP path FIRST (response priority),
+	// before INV REQ. RSPs unblock peer caps; REQs add new work.
+	for i := 0; i < c.outgoingRspPerCycle; i++ {
+		temp = c.processFromInvRspInside()
+		madeProgress = temp || madeProgress
+	}
+
 	for i := 0; i < c.outgoingRspPerCycle; i++ {
 		temp = c.processFromInvInside()
 		madeProgress = temp || madeProgress
@@ -279,6 +310,8 @@ func (c *Comp) drainRDMA() bool {
 	for c.RDMARequestOutside.RetrieveIncoming() != nil {
 	}
 	for c.RDMAInvInside.RetrieveIncoming() != nil {
+	}
+	for c.RDMAInvRspInside.RetrieveIncoming() != nil {
 	}
 
 	c.reqFromL1Buf = nil
@@ -417,6 +450,10 @@ func (c *Comp) processRspFromL2(
 	if transactionIndex == -1 {
 		c.RDMADataInside.RetrieveIncoming()
 		c.returnFalse1 = "[processRspFromL2] Cannot find transaction"
+		// [RDMA INSTRUMENTATION] Silent drop: response from local L2
+		// could not be matched against any pending external request.
+		c.lostRspFromL2Count++
+		c.lostRspFromL2SampleID = rsp.GetRspTo()
 		return true
 	}
 	trans := &(c.transactionsFromOutside[transactionIndex])
@@ -460,7 +497,13 @@ func (c *Comp) processIncomingRsp() bool {
 
 	if len(c.procInvReqBuf) > 0 {
 		item := c.procInvReqBuf[0]
-		err := c.RDMADataInside.Send(item)
+		// [ITER5 BUG FIX] procInvReqBuf holds InvReq messages whose
+		// Src was set to RDMAInvInside.AsRemote() at processInvReq
+		// (line 595). Sending via RDMADataInside therefore panics
+		// "sending port is not msg src". Use the matching port.
+		// Exposed by iter4's higher cross-GPU throughput which makes
+		// RDMAInvInside.CanSend()=false more frequent.
+		err := c.RDMAInvInside.Send(item)
 		if err == nil {
 			c.procInvReqBuf = c.procInvReqBuf[1:]
 
@@ -527,6 +570,13 @@ func (c *Comp) processRspFromRDMARequestOutside(
 	var rspToInside mem.AccessRsp
 
 	if transactionIndex == -1 {
+		// [RDMA INSTRUMENTATION] Incoming response from peer GPU
+		// failed to match any pending request this RDMA had forwarded
+		// outward — address-only routing then likely sends it to the
+		// wrong destination (or a port that isn't expecting it),
+		// stranding the originating L1/L2.
+		c.lostRspFromOutsideCount++
+		c.lostRspFromOutsideSampleID = rsp.GetRspTo()
 		rspToInside = c.cloneRsp(rsp, "", rsp.GetOrigin().GetAddress())
 		rspToInside.Meta().Src = c.RDMARequestInside.AsRemote()
 		rspToInside.Meta().Dst = c.localModuleBottoms.Find(rsp.GetOrigin().GetAddress())
@@ -645,7 +695,12 @@ func (c *Comp) processIncomingReq() bool {
 
 	if len(c.procInvRspBuf) > 0 {
 		item := c.procInvRspBuf[0]
-		err := c.RDMADataInside.Send(item)
+		// [ITER7] Use RDMAInvRspInside (not RDMADataInside) since
+		// procInvRspBuf items were queued by processInvRsp with
+		// Src=RDMAInvRspInside.AsRemote(). Sending via RDMADataInside
+		// would panic "sending port is not msg src" (analogous to
+		// the iter5 procInvReqBuf bug, just on the RSP side).
+		err := c.RDMAInvRspInside.Send(item)
 		if err == nil {
 			c.procInvRspBuf = c.procInvRspBuf[1:]
 			madeProgress = true
@@ -744,18 +799,27 @@ func (c *Comp) processInvRsp(
 	}
 	req := c.invalidationFromInside[i]
 
+	// [ITER7] Use dedicated RDMAInvRspInside port for INV RSP so RSP
+	// delivery cannot be queued behind INV REQ traffic on
+	// RDMAInvInside.outgoingBuf. The original InvReq's Src was set by
+	// REC's sendToTop to "GPU[X].<Dir>.RDMAInvPort"; the corresponding
+	// RspPort is "GPU[X].<Dir>.RDMAInvRspPort". Rewrite the Dst here
+	// so the directconnection RDMAToCohDirForInvRsp finds the port.
+	dstStr := string(req.Meta().Src)
+	rspDst := sim.RemotePort(strings.Replace(dstStr, ".RDMAInvPort", ".RDMAInvRspPort", 1))
+
 	rspToBottom := mem.InvRspBuilder{}.
-		WithSrc(c.RDMAInvInside.AsRemote()).
-		WithDst(req.Meta().Src).
+		WithSrc(c.RDMAInvRspInside.AsRemote()).
+		WithDst(rspDst).
 		WithRspTo(req.ReqFrom).
 		WithSrcRDMA(rsp.SrcRDMA).
 		Build()
 
 	err := (*sim.SendError)(nil)
-	if !c.RDMAInvInside.CanSend() {
+	if !c.RDMAInvRspInside.CanSend() {
 		c.procInvRspBuf = append(c.procInvRspBuf, rspToBottom)
 	} else {
-		err = c.RDMAInvInside.Send(rspToBottom)
+		err = c.RDMAInvRspInside.Send(rspToBottom)
 	}
 
 	if err == nil {
@@ -784,6 +848,9 @@ func (c *Comp) processFromInvInside() bool {
 		return false
 
 	case *mem.InvRsp:
+		// [ITER7] Defensive: with the iter7 wiring, REC sends RSPs
+		// via the new RDMAInvRspInside. This branch only fires for
+		// legacy paths (during the transition).
 		if c.sendInvRsp(req) {
 			c.recordMsgSend(req)
 			return true
@@ -792,6 +859,27 @@ func (c *Comp) processFromInvInside() bool {
 
 	default:
 		panic(fmt.Sprintf("unknown req type in RDMAInvInside: %s", reflect.TypeOf(req)))
+	}
+}
+
+// [ITER7] Dedicated INV RSP intake from REC. Isolated from
+// processFromInvInside so a backlog of outgoing INV REQs cannot
+// head-of-line block INV RSP egress on the cross-GPU path.
+func (c *Comp) processFromInvRspInside() bool {
+	rsp := c.RDMAInvRspInside.PeekIncoming()
+	if rsp == nil {
+		return false
+	}
+
+	switch rsp := rsp.(type) {
+	case *mem.InvRsp:
+		if c.sendInvRsp(rsp) {
+			c.recordMsgSend(rsp)
+			return true
+		}
+		return false
+	default:
+		panic(fmt.Sprintf("unknown msg type in RDMAInvRspInside: %s", reflect.TypeOf(rsp)))
 	}
 }
 

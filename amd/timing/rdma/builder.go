@@ -157,6 +157,11 @@ func (b Builder) Build(name string) *Comp {
 	rdma.RDMADataInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataInside")
 	rdma.RDMADataOutside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMADataOutside")
 	rdma.RDMAInvInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvInside")
+	// [ITER7] Dedicated port for INV RSP. Separates RSP egress from
+	// REQ on the inside-facing inv link so a stalled REQ stream cannot
+	// head-of-line block a RSP that would unblock the peer's
+	// inflightInvToBottom cap.
+	rdma.RDMAInvRspInside = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".RDMAInvRspInside")
 	rdma.CtrlPort = sim.NewPort(rdma, b.bufferSize, b.bufferSize, name+".CtrlPort")
 
 	rdma.AddPort("RDMARequestInside", rdma.RDMARequestInside)
@@ -164,6 +169,7 @@ func (b Builder) Build(name string) *Comp {
 	rdma.AddPort("RDMADataOutside", rdma.RDMADataOutside)
 	rdma.AddPort("RDMADataInside", rdma.RDMADataInside)
 	rdma.AddPort("RDMAInvInside", rdma.RDMAInvInside)
+	rdma.AddPort("RDMAInvRspInside", rdma.RDMAInvRspInside)
 	rdma.AddPort("CtrlPort", rdma.CtrlPort)
 
 	tracing.CollectTrace(rdma, b.visTracer)
