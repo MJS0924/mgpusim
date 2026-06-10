@@ -120,6 +120,11 @@ type Comp struct {
 	lostRspFromOutsideCount       uint64 // processRspFromRDMARequestOutside: incoming rsp had no matching transactionsFromInside
 	lostRspFromL2SampleID         string // last dropped RspTo ID at processRspFromL2 (newest wins)
 	lostRspFromOutsideSampleID    string // last dropped RspTo ID at processRspFromRDMARequestOutside
+	// [ITER20 DIAG D] every AccessRsp that arrives at RDMADataRspOutside
+	// (peer's ack ingress from the network), counted before matching. If
+	// this stays low while the peer egressed many eviction-acks, the acks
+	// vanish in the dir->RDMA->network leg, not at the matcher.
+	ackRecvAtRspOutsideCount      uint64
 
 	traceProcess bool
 	debugProcess bool
@@ -206,6 +211,22 @@ func (c *Comp) Tick() bool {
 	// --- Outbound RSPs (local L2 -> peer) ---
 	for i := 0; i < c.outgoingRspPerCycle; i++ {
 		temp = c.processFromL2() // local AccessRsp -> RDMADataRspOutside
+		madeProgress = temp || madeProgress
+	}
+
+	// [ITER19 DEADLOCK FIX] Drain the peer-serve AccessRsp that the local
+	// directory returns to RDMADataReqInside. processReqFromRDMADataOutside
+	// forwards a peer's AccessReq to the local dir with Src=RDMADataReqInside;
+	// every directory (REC/SD/HMG) copies rsp.Dst = req.Src verbatim, so the
+	// dir's AccessRsp is delivered into RDMADataReqInside.IncomingBuf. Nothing
+	// read it before -> responses piled up forever -> engine ran dry -> dead-
+	// lock (conv2d window-1 L=2304 == remote_read_miss). The request egress
+	// uses RDMADataReqInside.OutgoingBuf and this reader drains its IncomingBuf:
+	// physically distinct buffers, so a queued REQUEST can never head-of-line
+	// block a RESPONSE. RDMADataReqInside.IncomingBuf is type-pure (only the
+	// dir's AccessRsp is ever addressed there; ToRDMADataReq is a dead field).
+	for i := 0; i < c.outgoingRspPerCycle; i++ {
+		temp = c.processReqInsideRsp()
 		madeProgress = temp || madeProgress
 	}
 
@@ -337,6 +358,15 @@ func (c *Comp) drainRDMA() bool {
 	for c.RDMAInvInside.RetrieveIncoming() != nil {
 	}
 	for c.RDMAInvRspInside.RetrieveIncoming() != nil {
+	}
+	// [ITER19 DEADLOCK FIX] Also drain the typed data inside ports so a
+	// mid-flight DrainReq cannot strand peer-serve traffic and stall
+	// fullyDrained(): RDMADataReqInside holds the peer-serve REQ egress backlog
+	// and the peer-serve RSP ingress (now consumed by processReqInsideRsp);
+	// RDMADataRspInside is reserved/inert but drained for symmetry.
+	for c.RDMADataReqInside.RetrieveIncoming() != nil {
+	}
+	for c.RDMADataRspInside.RetrieveIncoming() != nil {
 	}
 	// [R1] drain the 4 typed wire-side ports.
 	for c.RDMADataReqOutside.RetrieveIncoming() != nil {
@@ -475,6 +505,77 @@ func (c *Comp) processFromL2() bool {
 	}
 }
 
+// [ITER19 DEADLOCK FIX] processReqInsideRsp drains the peer-serve AccessRsp
+// that the local directory returns to RDMADataReqInside.IncomingBuf. The
+// forwarded peer REQ (processReqFromRDMADataOutside) keeps Src=RDMADataReqInside,
+// and every directory (REC/SD/HMG) sets rsp.Dst = req.Src verbatim, so the
+// dir's AccessRsp arrives here. Type-pure: only AccessRsp is ever addressed to
+// RDMADataReqInside (ToRDMADataReq is a dead field; nothing sends an AccessReq
+// here). The request egress lives on RDMADataReqInside.OutgoingBuf, this reader
+// drains IncomingBuf -> distinct buffers, no req-blocks-rsp HoL.
+func (c *Comp) processReqInsideRsp() bool {
+	req := c.RDMADataReqInside.PeekIncoming()
+	if req == nil {
+		return false
+	}
+
+	switch req := req.(type) {
+	case mem.AccessRsp:
+		ret := c.processRspFromReqInside(req)
+		if ret {
+			c.recordMsgSend(req)
+		}
+		return ret
+	default:
+		panic(fmt.Sprintf("unknown rsp type %T at RDMADataReqInside, Src %s",
+			req, req.Meta().Src))
+	}
+}
+
+// processRspFromReqInside is processRspFromL2 with the ingress RetrieveIncoming
+// pointed at RDMADataReqInside instead of RDMADataInside. All other semantics
+// (transaction match against transactionsFromOutside, clone, ReqOutside ->
+// RspOutside Dst rewrite, ack/cleanup) are identical, so the peer-serve
+// completion path is unchanged.
+func (c *Comp) processRspFromReqInside(rsp mem.AccessRsp) bool {
+	if !c.RDMADataRspOutside.CanSend() {
+		return false
+	}
+
+	transactionIndex := c.findTransactionByRspToID(
+		rsp.GetRspTo(), c.transactionsFromOutside)
+	if transactionIndex == -1 {
+		c.RDMADataReqInside.RetrieveIncoming()
+		c.lostRspFromL2Count++
+		c.lostRspFromL2SampleID = rsp.GetRspTo()
+		return true
+	}
+	trans := &(c.transactionsFromOutside[transactionIndex])
+
+	rspToOutside := c.cloneRsp(rsp, trans.fromOutside.Meta().ID,
+		trans.fromOutside.(mem.AccessReq).GetAddress())
+	rspToOutside.Meta().Src = c.RDMADataRspOutside.AsRemote()
+	rspDst := string(trans.fromOutside.Meta().Src)
+	rspToOutside.Meta().Dst = sim.RemotePort(
+		strings.Replace(rspDst, ".RDMADataReqOutside", ".RDMADataRspOutside", 1))
+
+	err := c.RDMADataRspOutside.Send(rspToOutside)
+	if err != nil {
+		return false
+	}
+	c.RDMADataReqInside.RetrieveIncoming()
+
+	trans.ack++
+	if trans.ack >= rsp.GetWaitFor() {
+		c.traceOutsideInEnd(*trans)
+		c.transactionsFromOutside =
+			append(c.transactionsFromOutside[:transactionIndex],
+				c.transactionsFromOutside[transactionIndex+1:]...)
+	}
+
+	return true
+}
+
 func (c *Comp) processRspFromL2(
 	rsp mem.AccessRsp,
 ) bool {
@@ -549,6 +650,7 @@ func (c *Comp) processIncomingDataRsp() bool {
 
 	switch req := req.(type) {
 	case mem.AccessRsp:
+		c.ackRecvAtRspOutsideCount++ // [ITER20 DIAG D]
 		ret := c.processRspFromRDMARequestOutside(req)
 		if ret {
 			c.recordMsgSend(req)
@@ -753,7 +855,8 @@ func (c *Comp) processIncomingDataReq() bool {
 
 	if len(c.incomingReqBuf) > 0 {
 		item := c.incomingReqBuf[0]
-		err := c.RDMADataInside.Send(item)
+		// item.Src == RDMADataReqInside (set in processReqFromRDMADataOutside)
+		err := c.RDMADataReqInside.Send(item)
 		if err == nil {
 			c.incomingReqBuf = c.incomingReqBuf[1:]
 			madeProgress = true
@@ -983,9 +1086,19 @@ func (c *Comp) sendInvReq(
 		return false
 	}
 
+	// [ITER19 INV-ROUTE FIX] The directory records a sharer's identity from
+	// the original data request's SrcRDMA, which is the peer's
+	// RDMADataReqOutside (data-REQ port). Sending an InvReq there makes the
+	// peer's processIncomingDataReq panic ("unexpected type ... *mem.InvReq").
+	// Route the InvReq to the peer's typed INV-REQ ingress instead, mirroring
+	// the ReqOutside->RspOutside rewrite in processRspFromL2/sendInvRsp. For
+	// REC (DstRDMA already an inv port) the replace is a no-op.
+	invDst := sim.RemotePort(strings.Replace(
+		string(req.DstRDMA), ".RDMADataReqOutside", ".RDMAInvReqOutside", 1))
+
 	reqToOutside := mem.InvReqBuilder{}.
 		WithSrc(c.RDMAInvReqOutside.AsRemote()).
-		WithDst(req.DstRDMA).
+		WithDst(invDst).
 		WithPID(req.PID).
 		WithAddress(req.Address).
 		WithReqFrom(req.Meta().ID).
@@ -1017,7 +1130,11 @@ func (c *Comp) sendInvRsp(
 	i := c.findInvReqByRspToID(rsp.RespondTo, c.invalidationFromOutside)
 	if i == -1 {
 		fmt.Printf("[RDMA %d]\t2. Cannot find invalidation request for InvRsp with RespondTo %s\n", c.deviceID, rsp.RespondTo)
-		c.RDMAInvInside.RetrieveIncoming()
+		// [ITER19 INV-RSP DRAIN FIX] processFromInvRspInside peeked this InvRsp
+		// from RDMAInvRspInside; drain THAT port, not RDMAInvInside (distinct
+		// buffer). Draining the wrong port left the head un-popped -> infinite
+		// re-emit + HoL once the InvRsp routing fix delivers here.
+		c.RDMAInvRspInside.RetrieveIncoming()
 		return true
 	}
 	req := c.invalidationFromOutside[i]
@@ -1042,7 +1159,9 @@ func (c *Comp) sendInvRsp(
 
 	err := c.RDMAInvRspOutside.Send(rspToOutside)
 	if err == nil {
-		c.RDMAInvInside.RetrieveIncoming()
+		// [ITER19 INV-RSP DRAIN FIX] drain RDMAInvRspInside (the port
+		// processFromInvRspInside peeked), not RDMAInvInside.
+		c.RDMAInvRspInside.RetrieveIncoming()
 		c.invalidationFromOutside = append(c.invalidationFromOutside[:i], c.invalidationFromOutside[i+1:]...)
 		return true
 	}

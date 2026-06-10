@@ -204,5 +204,10 @@ func (b Builder) Build(name string) *Comp {
 
 	tracing.CollectTrace(rdma, b.visTracer)
 
+	// [DEADLOCK DUMP] post-mortem state dump on engine halt (RTM-independent).
+	if se, ok := b.engine.(*sim.SerialEngine); ok {
+		se.RegisterStopHook(rdma.DumpDeadlockState)
+	}
+
 	return rdma
 }

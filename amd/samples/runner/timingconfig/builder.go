@@ -9,6 +9,7 @@ import (
 	"github.com/sarchlab/akita/v4/mem/vm/mmu"
 	"github.com/sarchlab/akita/v4/noc/networking/nvlink"
 	"github.com/sarchlab/akita/v4/sim"
+	"github.com/sarchlab/akita/v4/sim/directconnection"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/mgpusim/v4/amd/driver"
 	"github.com/sarchlab/mgpusim/v4/amd/samples/runner/timingconfig/r9nano"
@@ -56,6 +57,14 @@ type Builder struct {
 	// nvlink.Connector.PlugInDevice when each GPU is attached. Used to
 	// build the all-pairs NVLink mesh after every GPU has been plugged in.
 	gpuDeviceIDs []int
+
+	// [INTER-GPU DIRECTCONN] Plain directconnection that carries inter-GPU
+	// RDMA traffic (the 4 typed RDMA Outside ports of every GPU) instead of
+	// the NVLink mesh. A directconnection forwards port-to-port with no
+	// internal network queues, so cross-GPU RDMA requests/responses cannot be
+	// held in NVLink switch buffers (where the stencil2d REC eviction storm
+	// was getting stuck out of sight of the port-level hang detector).
+	interGPUConn *directconnection.Comp
 }
 
 // MakeBuilder creates a new Builder with default parameters.
@@ -227,6 +236,15 @@ func (b Builder) Build() *sim.Domain {
 	gpuBuilder := b.createGPUBuilder(gpuDriver, mmuComp)
 	nvlinkConnector, rootComplexID :=
 		b.createConnection(gpuDriver, mmuComp)
+
+	// [INTER-GPU DIRECTCONN] Build the plain directconnection that will carry
+	// inter-GPU RDMA traffic. Each GPU's RDMA Outside ports are plugged into
+	// this (and excluded from the NVLink fabric) in createGPU.
+	b.interGPUConn = directconnection.MakeBuilder().
+		WithEngine(b.simulation.GetEngine()).
+		WithFreq(1 * sim.GHz).
+		Build("InterGPUDirect")
+	b.simulation.RegisterComponent(b.interGPUConn)
 
 	mmuComp.MigrationServiceProvider = gpuDriver.GetPortByName("MMU").AsRemote()
 
@@ -459,7 +477,29 @@ func (b *Builder) createGPU(
 	b.configRDMAEngine(gpu)
 	// b.configPMC(gpu, gpuDriver, pmcAddressTable)
 
-	deviceID := nvlinkConnector.PlugInDevice(pcieSwitchID, gpu.Ports())
+	// [INTER-GPU DIRECTCONN] Route the 4 typed RDMA Outside ports through the
+	// plain directconnection instead of the NVLink fabric. Plug them into
+	// interGPUConn and exclude them from the NVLink PlugInDevice so each port
+	// has exactly one connection.
+	rdmaOutsidePortNames := []string{
+		"RDMADataReq", "RDMADataRsp", "RDMAInvReq", "RDMAInvRsp",
+	}
+	rdmaOutsidePorts := map[sim.Port]bool{}
+	for _, n := range rdmaOutsidePortNames {
+		p := gpu.GetPortByName(n)
+		if p == nil {
+			continue
+		}
+		rdmaOutsidePorts[p] = true
+		b.interGPUConn.PlugIn(p)
+	}
+	pciePorts := make([]sim.Port, 0, len(gpu.Ports()))
+	for _, p := range gpu.Ports() {
+		if !rdmaOutsidePorts[p] {
+			pciePorts = append(pciePorts, p)
+		}
+	}
+	deviceID := nvlinkConnector.PlugInDevice(pcieSwitchID, pciePorts)
 	b.gpuDeviceIDs = append(b.gpuDeviceIDs, deviceID)
 
 	// b.gpus = append(b.gpus, gpu)

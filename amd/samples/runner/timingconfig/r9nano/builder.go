@@ -568,6 +568,11 @@ func (b *Builder) connectL1ToCohDir() {
 		// builder but previously left unplugged) to the dedicated
 		// inv-rsp link.
 		RDMAToCohDirForInvRsp.PlugIn(b.recDir.GetPortByName("RDMAInvRsp"))
+		// [ITER19] Plug REC's dedicated InvRsp EGRESS port into ForInvRsp
+		// (matches SD branch:561 / HMG branch:585). REC drains
+		// sendToRDMAInvRspQue from this port; RDMA.RDMAInvRspInside is also
+		// on ForInvRsp (builder:518), so the InvRsp routes cleanly.
+		RDMAToCohDirForInvRsp.PlugIn(b.recDir.GetPortByName("RDMAInvRspOut"))
 		// [R2] Plug REC's split data ports into the SHARED RDMAToCohDir
 		// (along with R1's RDMADataReqInside/RspInside on the RDMA side).
 		// Single connection lets the directory's RSP from RDMADataRspPort
@@ -620,8 +625,11 @@ func (b *Builder) connectL1ToCohDir() {
 		b.recDir.ToRDMAInv = b.rdmaEngine.RDMAInvInside.AsRemote()
 		// [ITER7] Tell REC where to send INV RSPs going outbound.
 		b.recDir.ToRDMAInvRsp = b.rdmaEngine.RDMAInvRspInside.AsRemote()
-		// [R2] Tell REC where to send peer-facing data REQ / RSP
-		// outbound (paired with R1's split RDMA outside ports).
+		// [R2] Tell REC where to send peer-facing data REQ / RSP outbound.
+		// NOTE: these ToRDMADataReq/Rsp fields are vestigial — REC derives the
+		// peer-serve rsp Dst from req.Src verbatim, never from these fields.
+		// The actual deadlock fix is the processReqInsideRsp reader in
+		// rdma/comp.go that drains RDMADataReqInside.IncomingBuf.
 		b.recDir.ToRDMADataReq = b.rdmaEngine.RDMADataReqInside.AsRemote()
 		b.recDir.ToRDMADataRsp = b.rdmaEngine.RDMADataRspInside.AsRemote()
 	} else if b.coherenceDirectory == 4 { // HMG
@@ -743,6 +751,10 @@ func (b *Builder) connectL2AndDRAM() {
 	} else {
 		for i, l2 := range b.l2Caches {
 			b.l2ToDramConnection.PlugIn(l2.GetPortByName("Bottom"))
+			// [L2 LOCAL/REMOTE SPLIT] remote-destined egress shares the same
+			// connection (DRAM + RDMA both reachable); its own port gives it an
+			// independent CanSend so local-DRAM egress can't starve it.
+			b.l2ToDramConnection.PlugIn(l2.GetPortByName("RemoteBottom"))
 
 			mapper := &mem.L2BottomMapper{
 				LocalBank: b.drams[i].GetPortByName("Top").AsRemote(),
