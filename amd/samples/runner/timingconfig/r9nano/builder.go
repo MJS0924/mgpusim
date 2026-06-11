@@ -48,7 +48,7 @@ type Builder struct {
 	sdLog2NumSubEntry              uint64
 	sdDisableRSB                   bool
 	sdDisableCBF                   bool
-	sdFE                        bool
+	sdFE                           bool
 	sdDisableDemoteLock            bool
 	sdPromoteRelaxed               bool
 	sdUseRsbHintAlloc              bool
@@ -1052,11 +1052,13 @@ func (b *Builder) buildCoherenceDirectory() {
 			// SD branch uses 17 for a +8 cycle hierarchical-lookup penalty (=18 total).
 			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget: at most 2 InvReqs per output
-			// channel per cycle (RDMA-bound + local-L2-bound counted
-			// separately). Models the directory controller's
-			// outgoing-channel serialization that the unbounded
-			// "drain until port full" baseline missed. Same value
-			// applied to SD/REC for fair comparison.
+			// channel per cycle (RDMA-bound, local-L2-bound, and — since
+			// [INV-FIDELITY C4] — the dir→peer-dir fan-out lane via
+			// RDMAInvPort, each counted separately). Models the directory
+			// controller's outgoing-channel serialization that the
+			// unbounded "drain until port full" baseline missed. The peer
+			// lane previously drained unbudgeted at up to 16 InvReq/cycle.
+			// Same value applied to SD/REC for fair comparison.
 			WithMaxInvEmitPerCycle(2).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
@@ -1452,28 +1454,37 @@ func (b *Builder) buildL2Caches() {
 			// returns to the SD-safe original value documented above and
 			// removes the L2 ingress as the dominant bottleneck.
 			WithNumReqPerCycle(4).
-			// Shared-pipeline inv-cost model: read/write/inv all
-			// traverse the same 2-stage directory pipeline (no
-			// dedicated snoop pipeline). This matches the more
-			// common real-hardware design where snoop processing
-			// shares the L2 tag-array ports with regular accesses.
-			//   directory stage (all 3 op types) = 2 cycles
-			//   data bank access (read/write)    = 10 cycles
-			// Inv still pays a higher commit cost via the existing
-			// invCostInSlots=2 weight in processTransaction (1 inv
-			// commit blocks 2 of 2 commit slots/cycle), capturing
-			// state-bit write contention. wasted invs pay the same
-			// directory traversal as productive ones (hit/miss agnostic
-			// floor). CD/SD/REC variants share this configuration via
-			// writebackcoh.
+			// [INV-FIDELITY] Inv-cost model (writebackcoh, shared by
+			// CD/SD/REC/HMG variants). All InvReqs traverse a dedicated
+			// 4-wide invPipeline of dirLatency+snoopLatency stages, but
+			// probes contend with demand accesses at BOTH shared
+			// arbitration points of the directory stage:
+			//   - admission: one numReqPerCycle(4) token pool per cycle
+			//     shared by inv/remote/local pipeline entry (the
+			//     tag-array port model, C2);
+			//   - commit: one numReqPerCycle(4) slot budget per cycle,
+			//     where an inv commit costs invCostInSlots=2 (state-bit
+			//     write occupancy), i.e. 1 inv displaces 2 of 4 demand
+			//     commits. Wasted invs pay the same traversal as
+			//     productive ones (hit/miss-agnostic floor); an inv that
+			//     kills a DIRTY line additionally produces a real local
+			//     victim writeback through the writeBuffer/DRAM path (C3).
+			//
+			// dirStage ticks exactly ONCE per cycle (C1) — stages are
+			// real cycles and the commit budget is a true 4 slots/cycle.
+			// (Before C1 it was ticked numReqPerCycle× per cycle, which
+			// quartered the latencies below and inflated commit bandwidth
+			// to 16/cycle, making the inv slot cost non-binding.)
 			//
 			// L2 hit latency: dirLatency (16, NoC routing + tag-array
 			// lookup) + bankLatency (184, data-array pipeline including
 			// ECC) = 200 cycles total. Matches NVIDIA A100 L2 hit
 			// (~190-210) and AMD CDNA2 L2 hit (~270 / 1.35× = ~200 at
-			// our 1 GHz vs their 1.35 GHz). Previous 2 + 10 = 12 cycles
-			// was 15-20× too short — L2 hits looked nearly free which
-			// over-rewarded directory variants that increase L2 hit rate.
+			// our 1 GHz vs their 1.35 GHz).
+			// Inv handling latency: dirLatency (16, shared tag access) +
+			// snoopLatency (-inv-extra-latency, default 8: state-bit
+			// write + snoop rsp generation) = 24 cycles, the low end of
+			// realistic per-probe cost.
 			WithDirectoryLatency(16).
 			WithSnoopLatency(b.invExtraLatency).
 			WithBankLatency(184).

@@ -860,6 +860,33 @@ func (r *reporter) reportCacheEvictions() {
 			Value:    float64(prfDscBsy),
 			Unit:     "count",
 		})
+
+		// [INV-FIDELITY] L2 invalidation cost-model observability counters:
+		// tag-port tokens consumed by probes / admission+commit contention
+		// cycles / dirty-line probe writebacks / deferred-invalidation arming.
+		invFidelityCounters := []string{
+			"InvTagProbe",
+			"TagPortTokensExhausted",
+			"DirCommitBudgetSaturated",
+			"InvDirtyWriteback",
+			"InvDirtyWritebackDeferred",
+			"InvDirtyWritebackStall",
+			"InvDirtyWritebackDropped",
+			"DeferredInvArmed",
+			"DeferredInvApplied",
+		}
+		for _, s := range invFidelityCounters {
+			count := stepCount(tracer.cache, tracer.tracer, s)
+			if count == 0 {
+				continue
+			}
+			r.dataRecorder.InsertData(tableName, metric{
+				Location: tracer.cache.Name(),
+				What:     s,
+				Value:    float64(count),
+				Unit:     "count",
+			})
+		}
 	}
 }
 

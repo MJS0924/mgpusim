@@ -120,10 +120,15 @@ var sdPromoteAtEvictMultiBank = flag.Bool("sd-promote-at-evict-multi-bank", fals
 var mgdRegionSize = flag.Uint64("mgd-region-size", 1024,
 	"MGD: coarse-grain region size in bytes "+
 		"(1024=DGD-1K, 4096=DGD-4K, 8192=DGD-8K). Power of two, >= block size.")
-var invExtraLatencyFlag = flag.Int("inv-extra-latency", 0,
+var invExtraLatencyFlag = flag.Int("inv-extra-latency", 8,
 	"Extra cycles added to the L2 invalidation pipeline on top of the "+
-		"baseline directory latency. 0 = unchanged. Use to measure how "+
-		"sensitive runtime is to invalidation handling cost.")
+		"baseline directory latency (tag access). Default 8: a probe pays "+
+		"the shared 16-cycle tag lookup plus 8 cycles of state-bit write "+
+		"and snoop-response generation = 24 cycles total, the low end of "+
+		"realistic L2 probe handling (24-40 cycles; cf. A100/CDNA2-class "+
+		"L2 slices). 0 = probe costs only the tag lookup. Each unit is one "+
+		"real cycle now that the L2 dirStage ticks once per cycle "+
+		"[INV-FIDELITY C1].")
 var recHalfSetFlag = flag.Bool("rec-half-set", false,
 	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
 		"2x entry-size hardware overhead.")
