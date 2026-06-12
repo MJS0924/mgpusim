@@ -6,6 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/conv2d/coalescability
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \
     -coherence-unit-size=0 \
     -log2-page-size=12 \

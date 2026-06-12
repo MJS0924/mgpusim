@@ -8,6 +8,7 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/c
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
     -N=1 -C=3 -H=333 -W=333 -output-channel=3 -kernel-height=7 -kernel-width=7 \

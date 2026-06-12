@@ -8,9 +8,13 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/l
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -per-window-snapshot \
+    -window-instructions=50000 \
+    -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_SD_per_window.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/lenet_superdirectory.txt
 

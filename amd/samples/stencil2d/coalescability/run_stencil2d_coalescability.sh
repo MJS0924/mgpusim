@@ -6,10 +6,11 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2d/coalescability
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
-    -row=2828 -col=2828 -iter=4 \
+    -row=2828 -col=2828 -iter=2 \
     -coalescability-heatmap \
     -coalescability-heatmap-dir=/root/mgpusim_home/results/coalescability/rawdata/heatmap/stencil2d \
     -window-instructions=50000 \

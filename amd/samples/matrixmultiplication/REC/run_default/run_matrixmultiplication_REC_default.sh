@@ -6,6 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/REC/run_default
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=REC \
     -log2-page-size=12 \
     -x=2500 -y=2500 -z=2500 \

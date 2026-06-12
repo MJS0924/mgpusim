@@ -6,10 +6,11 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/coalescability
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=2 -batch-size=256 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=256 \
     -coalescability-heatmap \
     -coalescability-heatmap-dir=/root/mgpusim_home/results/coalescability/rawdata/heatmap/minerva \
     -window-instructions=50000 \

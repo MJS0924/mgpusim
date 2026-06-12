@@ -6,10 +6,14 @@ cd /root/mgpusim_home/mgpusim/amd/samples/lenet/REC/run_halfset
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=REC \
     -log2-page-size=12 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
     -rec-half-set \
+    -per-window-snapshot \
+    -window-instructions=50000 \
+    -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_REC_halfset_per_window.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/lenet_REC_halfset.txt
 

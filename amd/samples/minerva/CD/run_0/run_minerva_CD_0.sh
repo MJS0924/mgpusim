@@ -6,10 +6,14 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/CD/run_0
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=0 \
     -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
+    -per-window-snapshot \
+    -window-instructions=50000 \
+    -per-window-output=/root/mgpusim_home/results/per_window/minerva/minerva_CD_0_per_window.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/minerva_CD_0.txt
 

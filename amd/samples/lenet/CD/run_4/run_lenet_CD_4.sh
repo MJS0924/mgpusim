@@ -6,10 +6,14 @@ cd /root/mgpusim_home/mgpusim/amd/samples/lenet/CD/run_4
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
+    -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=4 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -per-window-snapshot \
+    -window-instructions=50000 \
+    -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_CD_4_per_window.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/lenet_CD_4.txt
 
