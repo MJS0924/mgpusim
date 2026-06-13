@@ -43,29 +43,30 @@ type Runner struct {
 	GPUIDs     []int
 	benchmarks []benchmarks.Benchmark
 
-	log2PageSize          uint64
-	log2CacheBlockSize    uint64
-	log2CoherenceUnitSize uint64
-	pageMigrationPolicy   uint64
-	coherenceDirectory    uint64
-	idealDirectory        bool
-	cdFifoReplacement     bool
-	sdNumBanks            int
-	sdLog2NumSubEntry     uint64
-	sdByteSize            uint64
-	sdDisableRSB          bool
-	sdDisableCBF          bool
-	sdFE               bool
-	sdDisableDemoteLock   bool
-	sdPromoteRelaxed      bool
-	sdUseRsbHintAlloc     bool
-	sdRecordSilentEvict   bool
+	log2PageSize               uint64
+	log2CacheBlockSize         uint64
+	log2CoherenceUnitSize      uint64
+	pageMigrationPolicy        uint64
+	coherenceDirectory         uint64
+	idealDirectory             bool
+	cdFifoReplacement          bool
+	sdNumBanks                 int
+	sdLog2NumSubEntry          uint64
+	sdByteSize                 uint64
+	sdDisableRSB               bool
+	sdDisableCBF               bool
+	sdFE                       bool
+	sdDisableDemoteLock        bool
+	sdPromoteRelaxed           bool
+	sdUseRsbHintAlloc          bool
+	sdRecordSilentEvict        bool
 	sdPromoteAtEvict           bool
 	sdPromoteAtEvictBiasVictim bool
 	sdPromoteAtEvictMultiBank  bool
-	mgdRegionSize         uint64
-	recHalfSet            bool
-	invExtraLatency       int
+	mgdRegionSize              uint64
+	recHalfSet                 bool
+	invExtraLatency            int
+	interGPUNoC                bool
 }
 
 // Init initializes the platform simulate
@@ -140,7 +141,8 @@ func (r *Runner) buildTimingPlatform() {
 		WithSDPromoteAtEvictMultiBank(r.sdPromoteAtEvictMultiBank).
 		WithMGDRegionSize(r.mgdRegionSize).
 		WithRECHalfSet(r.recHalfSet).
-		WithInvExtraLatency(r.invExtraLatency)
+		WithInvExtraLatency(r.invExtraLatency).
+		WithInterGPUNoC(r.interGPUNoC)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()

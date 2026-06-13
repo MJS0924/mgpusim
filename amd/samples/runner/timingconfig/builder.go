@@ -7,6 +7,7 @@ import (
 	"github.com/sarchlab/akita/v4/mem/mem"
 	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/mem/vm/mmu"
+	"github.com/sarchlab/akita/v4/noc/networking/networkconnector"
 	"github.com/sarchlab/akita/v4/noc/networking/nvlink"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/sim/directconnection"
@@ -19,33 +20,34 @@ import (
 type Builder struct {
 	simulation *simulation.Simulation
 
-	numGPUs               int
-	numCUPerSA            int
-	numSAPerGPU           int
-	cpuMemSize            uint64
-	gpuMemSize            uint64
-	log2PageSize          uint64
-	log2CacheBlockSize    uint64
-	log2CoherenceUnitSize uint64
-	useMagicMemoryCopy    bool
-	pageMigrationPolicy   uint64
-	coherenceDirectory    uint64
-	sdNumBanks            int
-	sdLog2NumSubEntry     uint64
-	sdByteSize            uint64
-	sdDisableRSB          bool
-	sdDisableCBF          bool
-	sdFE               bool
-	sdDisableDemoteLock   bool
-	sdPromoteRelaxed      bool
-	sdUseRsbHintAlloc     bool
-	sdRecordSilentEvict   bool
+	numGPUs                    int
+	numCUPerSA                 int
+	numSAPerGPU                int
+	cpuMemSize                 uint64
+	gpuMemSize                 uint64
+	log2PageSize               uint64
+	log2CacheBlockSize         uint64
+	log2CoherenceUnitSize      uint64
+	useMagicMemoryCopy         bool
+	pageMigrationPolicy        uint64
+	coherenceDirectory         uint64
+	sdNumBanks                 int
+	sdLog2NumSubEntry          uint64
+	sdByteSize                 uint64
+	sdDisableRSB               bool
+	sdDisableCBF               bool
+	sdFE                       bool
+	sdDisableDemoteLock        bool
+	sdPromoteRelaxed           bool
+	sdUseRsbHintAlloc          bool
+	sdRecordSilentEvict        bool
 	sdPromoteAtEvict           bool
 	sdPromoteAtEvictBiasVictim bool
 	sdPromoteAtEvictMultiBank  bool
-	mgdRegionSize         uint64
-	recHalfSet            bool
-	invExtraLatency       int
+	mgdRegionSize              uint64
+	recHalfSet                 bool
+	invExtraLatency            int
+	interGPUNoC                bool
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
@@ -64,8 +66,50 @@ type Builder struct {
 	// internal network queues, so cross-GPU RDMA requests/responses cannot be
 	// held in NVLink switch buffers (where the stencil2d REC eviction storm
 	// was getting stuck out of sight of the port-level hang detector).
+	// Used on the DEFAULT path (interGPUNoC == false).
 	interGPUConn *directconnection.Comp
+
+	// [INTER-GPU NOC] When interGPUNoC is true, the 4 RDMA ports of every GPU
+	// ride this dedicated bandwidth-modeled NoC instead of interGPUConn. The
+	// topology is one switch per GPU plus a dedicated link between every switch
+	// pair (true 1:1 / all-pairs point-to-point among the 4 GPUs). Bandwidth is
+	// governed by the flit-serialization model: per-direction BW = flitSize x
+	// numChannels x freq. With interGPUNoCFlitBytes=300, 1 channel, 1 GHz this
+	// is exactly 300 GB/s per direction per pair link.
+	//
+	// NOTE on akita's bandwidth model: in this version a network LINK is always
+	// an *ideal* directconnection at the connector default frequency
+	// (networkconnector.connectPorts only implements LinkParam.IsIdeal and
+	// discards the link Frequency), so WithNVLinkBandwidth / a link frequency
+	// CANNOT set bandwidth — only flit size x channels x freq does. That is why
+	// we use a dedicated connector with its own flit size (rather than reusing
+	// the PCIe/control NVLink mesh, whose 34 B flit is shared with the PCIe
+	// tree).
+	interGPURDMANoC  *networkconnector.Connector
+	rdmaNoCSwitchIDs []int
 }
+
+const (
+	// interGPUNoCFlitBytes sets the inter-GPU NoC per-direction bandwidth via
+	// the flit model: BW = flitBytes x numChannels x freq. At 1 GHz, 1 channel,
+	// 300 bytes/flit => 300 GB/s per direction (decimal) per dedicated pair
+	// link — the literal "300 GB/s per direction" reading. To model the REC
+	// paper's "300 GB/s bi-directional aggregate" reading instead, set 150
+	// (= 150 GB/s each way). For binary GiB/s (322 GB/s decimal), set 322.
+	interGPUNoCFlitBytes = 300
+
+	// interGPUNoCBufSize is the per-port flit buffer depth on the NoC switches
+	// and endpoints. Sized >= the directory inflight caps (numPeerInflight /
+	// inflightInvToBottom = 256) so that, under a REC/SD eviction-or-inv storm,
+	// the binding backpressure edge stays at the directory (where the hang
+	// detector and diagnoses look) rather than in the smaller, less-visible
+	// NoC switch buffers.
+	interGPUNoCBufSize = 256
+
+	// interGPUNoCSwitchLatency models the per-hop switch latency (cycles),
+	// matching the NVLink switch latency used elsewhere.
+	interGPUNoCSwitchLatency = 140
+)
 
 // MakeBuilder creates a new Builder with default parameters.
 func MakeBuilder() Builder {
@@ -221,6 +265,16 @@ func (b Builder) WithInvExtraLatency(n int) Builder {
 	return b
 }
 
+// WithInterGPUNoC selects the inter-GPU RDMA interconnect. When true, the 4
+// RDMA ports of every GPU ride a dedicated 300 GB/s bandwidth-modeled NoC
+// (one switch per GPU, dedicated all-pairs 1:1 links). When false (default),
+// they ride the idealized bandwidth-less directconnection used for the
+// deadlock-debugging workflow.
+func (b Builder) WithInterGPUNoC(v bool) Builder {
+	b.interGPUNoC = v
+	return b
+}
+
 // Build builds the hardware platform.
 func (b Builder) Build() *sim.Domain {
 	b.cpuGPUMemSizeMustEqual()
@@ -237,14 +291,21 @@ func (b Builder) Build() *sim.Domain {
 	nvlinkConnector, rootComplexID :=
 		b.createConnection(gpuDriver, mmuComp)
 
-	// [INTER-GPU DIRECTCONN] Build the plain directconnection that will carry
-	// inter-GPU RDMA traffic. Each GPU's RDMA Outside ports are plugged into
-	// this (and excluded from the NVLink fabric) in createGPU.
-	b.interGPUConn = directconnection.MakeBuilder().
-		WithEngine(b.simulation.GetEngine()).
-		WithFreq(1 * sim.GHz).
-		Build("InterGPUDirect")
-	b.simulation.RegisterComponent(b.interGPUConn)
+	// Build the inter-GPU RDMA fabric. Default: the idealized directconnection
+	// (deadlock-debug-friendly). Opt-in (-inter-gpu-noc): a dedicated 300 GB/s
+	// bandwidth-modeled NoC initialized here and wired per-GPU in createGPU.
+	if b.interGPUNoC {
+		b.initInterGPURDMANoC()
+	} else {
+		// [INTER-GPU DIRECTCONN] Build the plain directconnection that will
+		// carry inter-GPU RDMA traffic. Each GPU's RDMA Outside ports are
+		// plugged into this (and excluded from the NVLink fabric) in createGPU.
+		b.interGPUConn = directconnection.MakeBuilder().
+			WithEngine(b.simulation.GetEngine()).
+			WithFreq(1 * sim.GHz).
+			Build("InterGPUDirect")
+		b.simulation.RegisterComponent(b.interGPUConn)
+	}
 
 	mmuComp.MigrationServiceProvider = gpuDriver.GetPortByName("MMU").AsRemote()
 
@@ -268,7 +329,83 @@ func (b Builder) Build() *sim.Domain {
 
 	nvlinkConnector.EstablishRoute()
 
+	// [INTER-GPU NOC] After every GPU has attached its RDMA ports to its own
+	// switch (in createGPU), build a dedicated link between every switch pair
+	// (all-pairs / true 1:1 point-to-point) and finalize the routing tables.
+	if b.interGPUNoC {
+		for i := 0; i < len(b.rdmaNoCSwitchIDs); i++ {
+			for j := i + 1; j < len(b.rdmaNoCSwitchIDs); j++ {
+				b.interGPURDMANoC.ConnectSwitches(
+					b.rdmaNoCSwitchIDs[i], b.rdmaNoCSwitchIDs[j],
+					b.rdmaNoCSwitchLinkParam())
+			}
+		}
+		b.interGPURDMANoC.EstablishRoute()
+	}
+
 	return b.platform
+}
+
+// initInterGPURDMANoC builds the empty dedicated RDMA NoC connector. Switches
+// (one per GPU) and the device links are added in createGPU; the all-pairs
+// switch links + routing are finalized at the end of Build().
+func (b *Builder) initInterGPURDMANoC() {
+	conn := networkconnector.MakeConnector().
+		WithEngine(b.simulation.GetEngine()).
+		WithMonitor(b.simulation.GetMonitor()).
+		WithDefaultFreq(1 * sim.GHz).
+		WithFlitSize(interGPUNoCFlitBytes)
+	b.interGPURDMANoC = &conn
+	b.interGPURDMANoC.NewNetwork("InterGPURDMANoC")
+}
+
+// rdmaNoCDeviceLinkParam describes the GPU<->its-own-switch link.
+func (b *Builder) rdmaNoCDeviceLinkParam() networkconnector.DeviceToSwitchLinkParameter {
+	return networkconnector.DeviceToSwitchLinkParameter{
+		DeviceEndParam: networkconnector.LinkEndDeviceParameter{
+			IncomingBufSize:  interGPUNoCBufSize,
+			OutgoingBufSize:  interGPUNoCBufSize,
+			NumInputChannel:  1,
+			NumOutputChannel: 1,
+		},
+		SwitchEndParam: networkconnector.LinkEndSwitchParameter{
+			IncomingBufSize:  interGPUNoCBufSize,
+			OutgoingBufSize:  interGPUNoCBufSize,
+			NumInputChannel:  1,
+			NumOutputChannel: 1,
+			Latency:          1,
+		},
+		LinkParam: networkconnector.LinkParameter{
+			IsIdeal:       true,
+			Frequency:     1 * sim.GHz,
+			NumStage:      20,
+			CyclePerStage: 1,
+			PipelineWidth: 1,
+		},
+	}
+}
+
+// rdmaNoCSwitchLinkParam describes a dedicated switch<->switch link between a
+// GPU pair (the per-pair 1:1 point-to-point edge).
+func (b *Builder) rdmaNoCSwitchLinkParam() networkconnector.SwitchToSwitchLinkParameter {
+	end := networkconnector.LinkEndSwitchParameter{
+		IncomingBufSize:  interGPUNoCBufSize,
+		OutgoingBufSize:  interGPUNoCBufSize,
+		NumInputChannel:  1,
+		NumOutputChannel: 1,
+		Latency:          interGPUNoCSwitchLatency,
+	}
+	return networkconnector.SwitchToSwitchLinkParameter{
+		LeftEndParam:  end,
+		RightEndParam: end,
+		LinkParam: networkconnector.LinkParameter{
+			IsIdeal:       true,
+			Frequency:     1 * sim.GHz,
+			NumStage:      20,
+			CyclePerStage: 1,
+			PipelineWidth: 1,
+		},
+	}
 }
 
 func (b *Builder) cpuGPUMemSizeMustEqual() {
@@ -477,22 +614,41 @@ func (b *Builder) createGPU(
 	b.configRDMAEngine(gpu)
 	// b.configPMC(gpu, gpuDriver, pmcAddressTable)
 
-	// [INTER-GPU DIRECTCONN] Route the 4 typed RDMA Outside ports through the
-	// plain directconnection instead of the NVLink fabric. Plug them into
-	// interGPUConn and exclude them from the NVLink PlugInDevice so each port
-	// has exactly one connection.
+	// Route the 4 typed RDMA Outside ports off the NVLink/PCIe fabric onto the
+	// inter-GPU RDMA interconnect. In BOTH modes the 4 RDMA ports are excluded
+	// from nvlinkConnector.PlugInDevice (so each port has exactly one
+	// connection); they go either to the directconnection (default) or to the
+	// dedicated NoC (-inter-gpu-noc).
 	rdmaOutsidePortNames := []string{
 		"RDMADataReq", "RDMADataRsp", "RDMAInvReq", "RDMAInvRsp",
 	}
 	rdmaOutsidePorts := map[sim.Port]bool{}
+	rdmaPortList := make([]sim.Port, 0, len(rdmaOutsidePortNames))
 	for _, n := range rdmaOutsidePortNames {
 		p := gpu.GetPortByName(n)
 		if p == nil {
 			continue
 		}
 		rdmaOutsidePorts[p] = true
-		b.interGPUConn.PlugIn(p)
+		rdmaPortList = append(rdmaPortList, p)
 	}
+
+	if b.interGPUNoC {
+		// [INTER-GPU NOC] This GPU gets its own switch; its 4 RDMA ports attach
+		// to it via one endpoint. Dedicated all-pairs switch links + routing
+		// are finalized at the end of Build().
+		swID := b.interGPURDMANoC.AddSwitch()
+		b.interGPURDMANoC.ConnectDevice(
+			swID, rdmaPortList, b.rdmaNoCDeviceLinkParam())
+		b.rdmaNoCSwitchIDs = append(b.rdmaNoCSwitchIDs, swID)
+	} else {
+		// [INTER-GPU DIRECTCONN] Plug the 4 RDMA ports into the bandwidth-less
+		// directconnection.
+		for _, p := range rdmaPortList {
+			b.interGPUConn.PlugIn(p)
+		}
+	}
+
 	pciePorts := make([]sim.Port, 0, len(gpu.Ports()))
 	for _, p := range gpu.Ports() {
 		if !rdmaOutsidePorts[p] {

@@ -129,6 +129,14 @@ var invExtraLatencyFlag = flag.Int("inv-extra-latency", 8,
 		"L2 slices). 0 = probe costs only the tag lookup. Each unit is one "+
 		"real cycle now that the L2 dirStage ticks once per cycle "+
 		"[INV-FIDELITY C1].")
+var interGPUNoCFlag = flag.Bool("inter-gpu-noc", false,
+	"Route inter-GPU RDMA (coherence/data) traffic over a real 300 GB/s "+
+		"bandwidth-modeled NoC (one switch per GPU, dedicated all-pairs 1:1 "+
+		"links) instead of the default idealized directconnection. Default "+
+		"false keeps the bandwidth-less directconnection, which is what the "+
+		"deadlock-debugging workflow relies on (cross-GPU RDMA cannot hide in "+
+		"switch buffers). Opt-in: enables a finite-bandwidth, switched fabric "+
+		"that is more realistic but reintroduces switch-buffer backpressure.")
 var recHalfSetFlag = flag.Bool("rec-half-set", false,
 	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
 		"2x entry-size hardware overhead.")
@@ -246,6 +254,7 @@ func (r *Runner) parseGPUFlag() {
 	r.mgdRegionSize = *mgdRegionSize
 	r.recHalfSet = *recHalfSetFlag
 	r.invExtraLatency = *invExtraLatencyFlag
+	r.interGPUNoC = *interGPUNoCFlag
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {
