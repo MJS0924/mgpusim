@@ -137,6 +137,12 @@ var interGPUNoCFlag = flag.Bool("inter-gpu-noc", false,
 		"deadlock-debugging workflow relies on (cross-GPU RDMA cannot hide in "+
 		"switch buffers). Opt-in: enables a finite-bandwidth, switched fabric "+
 		"that is more realistic but reintroduces switch-buffer backpressure.")
+var interGPUNoCBWFlag = flag.Int("inter-gpu-noc-bw", 300,
+	"Per-direction bandwidth (GB/s, decimal) of each inter-GPU NoC link "+
+		"when -inter-gpu-noc is set. E.g. 300 => 300 GB/s each way per "+
+		"dedicated GPU-pair link. Modeled via the flit serialization "+
+		"(flitBytes = value, at 1 GHz / 1 channel). Ignored when "+
+		"-inter-gpu-noc is false.")
 var recHalfSetFlag = flag.Bool("rec-half-set", false,
 	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
 		"2x entry-size hardware overhead.")
@@ -255,6 +261,7 @@ func (r *Runner) parseGPUFlag() {
 	r.recHalfSet = *recHalfSetFlag
 	r.invExtraLatency = *invExtraLatencyFlag
 	r.interGPUNoC = *interGPUNoCFlag
+	r.interGPUNoCBW = *interGPUNoCBWFlag
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

@@ -67,6 +67,7 @@ type Runner struct {
 	recHalfSet                 bool
 	invExtraLatency            int
 	interGPUNoC                bool
+	interGPUNoCBW              int
 }
 
 // Init initializes the platform simulate
@@ -142,7 +143,8 @@ func (r *Runner) buildTimingPlatform() {
 		WithMGDRegionSize(r.mgdRegionSize).
 		WithRECHalfSet(r.recHalfSet).
 		WithInvExtraLatency(r.invExtraLatency).
-		WithInterGPUNoC(r.interGPUNoC)
+		WithInterGPUNoC(r.interGPUNoC).
+		WithInterGPUNoCBandwidth(r.interGPUNoCBW)
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()

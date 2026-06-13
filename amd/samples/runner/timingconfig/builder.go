@@ -74,8 +74,9 @@ type Builder struct {
 	// topology is one switch per GPU plus a dedicated link between every switch
 	// pair (true 1:1 / all-pairs point-to-point among the 4 GPUs). Bandwidth is
 	// governed by the flit-serialization model: per-direction BW = flitSize x
-	// numChannels x freq. With interGPUNoCFlitBytes=300, 1 channel, 1 GHz this
-	// is exactly 300 GB/s per direction per pair link.
+	// numChannels x freq. With flitSize = interGPUNoCBW (GB/s), 1 channel, 1
+	// GHz this is exactly interGPUNoCBW GB/s per direction per pair link
+	// (e.g. 300 => 300 GB/s each way); set via -inter-gpu-noc-bw.
 	//
 	// NOTE on akita's bandwidth model: in this version a network LINK is always
 	// an *ideal* directconnection at the connector default frequency
@@ -87,16 +88,24 @@ type Builder struct {
 	// tree).
 	interGPURDMANoC  *networkconnector.Connector
 	rdmaNoCSwitchIDs []int
+
+	// interGPUNoCBW is the per-direction bandwidth (GB/s, decimal) of each
+	// inter-GPU NoC link. It maps directly to the flit byte size: BW =
+	// flitBytes x numChannels x freq, and at 1 GHz / 1 channel flitBytes =
+	// BW-in-GB/s, so 300 => 300 GB/s each way per dedicated GPU-pair link.
+	// Only used when interGPUNoC is true. Defaults to interGPUNoCDefaultBW.
+	interGPUNoCBW int
 }
 
 const (
-	// interGPUNoCFlitBytes sets the inter-GPU NoC per-direction bandwidth via
-	// the flit model: BW = flitBytes x numChannels x freq. At 1 GHz, 1 channel,
-	// 300 bytes/flit => 300 GB/s per direction (decimal) per dedicated pair
-	// link — the literal "300 GB/s per direction" reading. To model the REC
-	// paper's "300 GB/s bi-directional aggregate" reading instead, set 150
-	// (= 150 GB/s each way). For binary GiB/s (322 GB/s decimal), set 322.
-	interGPUNoCFlitBytes = 300
+	// interGPUNoCDefaultBW is the default per-direction inter-GPU NoC bandwidth
+	// (GB/s, decimal) used when the -inter-gpu-noc-bw flag is not set. The flit
+	// model gives BW = flitBytes x numChannels x freq; at 1 GHz, 1 channel,
+	// flitBytes = BW-in-GB/s, so 300 => 300 GB/s per direction (decimal) per
+	// dedicated pair link. For the REC paper's "300 GB/s bi-directional
+	// aggregate" reading instead, pass 150 (= 150 GB/s each way); for binary
+	// GiB/s (322 GB/s decimal), pass 322.
+	interGPUNoCDefaultBW = 300
 
 	// interGPUNoCBufSize is the per-port flit buffer depth on the NoC switches
 	// and endpoints. Sized >= the directory inflight caps (numPeerInflight /
@@ -125,6 +134,7 @@ func MakeBuilder() Builder {
 		sdLog2NumSubEntry:  2,
 		sdByteSize:         512 * mem.KB,
 		mgdRegionSize:      1024,
+		interGPUNoCBW:      interGPUNoCDefaultBW,
 	}
 }
 
@@ -275,6 +285,19 @@ func (b Builder) WithInterGPUNoC(v bool) Builder {
 	return b
 }
 
+// WithInterGPUNoCBandwidth sets the per-direction bandwidth (GB/s, decimal) of
+// each inter-GPU NoC link. The value maps directly to the flit byte size, so
+// 300 => 300 GB/s each way per dedicated GPU-pair link. Only effective when
+// the inter-GPU NoC is selected (WithInterGPUNoC(true)). A value <= 0 falls
+// back to the default.
+func (b Builder) WithInterGPUNoCBandwidth(gbPerSec int) Builder {
+	if gbPerSec <= 0 {
+		gbPerSec = interGPUNoCDefaultBW
+	}
+	b.interGPUNoCBW = gbPerSec
+	return b
+}
+
 // Build builds the hardware platform.
 func (b Builder) Build() *sim.Domain {
 	b.cpuGPUMemSizeMustEqual()
@@ -350,11 +373,17 @@ func (b Builder) Build() *sim.Domain {
 // (one per GPU) and the device links are added in createGPU; the all-pairs
 // switch links + routing are finalized at the end of Build().
 func (b *Builder) initInterGPURDMANoC() {
+	// flit bytes = per-direction GB/s (decimal) at 1 GHz / 1 channel, so the
+	// bandwidth flag value maps straight through (300 => 300 GB/s each way).
+	flitBytes := b.interGPUNoCBW
+	if flitBytes <= 0 {
+		flitBytes = interGPUNoCDefaultBW
+	}
 	conn := networkconnector.MakeConnector().
 		WithEngine(b.simulation.GetEngine()).
 		WithMonitor(b.simulation.GetMonitor()).
 		WithDefaultFreq(1 * sim.GHz).
-		WithFlitSize(interGPUNoCFlitBytes)
+		WithFlitSize(flitBytes)
 	b.interGPURDMANoC = &conn
 	b.interGPURDMANoC.NewNetwork("InterGPURDMANoC")
 }
