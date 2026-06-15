@@ -143,6 +143,13 @@ var interGPUNoCBWFlag = flag.Int("inter-gpu-noc-bw", 300,
 		"dedicated GPU-pair link. Modeled via the flit serialization "+
 		"(flitBytes = value, at 1 GHz / 1 channel). Ignored when "+
 		"-inter-gpu-noc is false.")
+var interGPUNoCSplitRspFlag = flag.Bool("inter-gpu-noc-split-rsp", false,
+	"Route inter-GPU RDMA requests and responses over TWO independent NoCs "+
+		"(request lane {RDMADataReq, RDMAInvReq} vs response lane "+
+		"{RDMADataRsp, RDMAInvRsp}) instead of one shared endpoint. Removes the "+
+		"request-blocks-response head-of-line deadlock (the CD_8 cross-GPU "+
+		"invalidation hang). Only effective with -inter-gpu-noc. Default false "+
+		"keeps the single shared NoC so prior results stay comparable.")
 var recHalfSetFlag = flag.Bool("rec-half-set", false,
 	"REC: halve the number of sets (e.g. 1024->512) to reflect REC's "+
 		"2x entry-size hardware overhead.")
@@ -262,6 +269,7 @@ func (r *Runner) parseGPUFlag() {
 	r.invExtraLatency = *invExtraLatencyFlag
 	r.interGPUNoC = *interGPUNoCFlag
 	r.interGPUNoCBW = *interGPUNoCBWFlag
+	r.interGPUNoCSplitRsp = *interGPUNoCSplitRspFlag
 }
 
 func (r *Runner) gpuIDStringToList(gpuIDsString string) []int {

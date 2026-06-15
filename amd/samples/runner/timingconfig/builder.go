@@ -48,6 +48,7 @@ type Builder struct {
 	recHalfSet                 bool
 	invExtraLatency            int
 	interGPUNoC                bool
+	interGPUNoCSplitRsp        bool
 
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
@@ -88,6 +89,19 @@ type Builder struct {
 	// tree).
 	interGPURDMANoC  *networkconnector.Connector
 	rdmaNoCSwitchIDs []int
+
+	// [INTER-GPU NOC — REQ/RSP SPLIT] When interGPUNoCSplitRsp is true (and
+	// interGPUNoC is true), the 4 RDMA ports ride TWO independent NoCs instead
+	// of one shared endpoint: a REQUEST NoC carrying {RDMADataReq, RDMAInvReq}
+	// and a RESPONSE NoC carrying {RDMADataRsp, RDMAInvRsp}. This stops a
+	// request flit from head-of-line-blocking a response flit on a shared
+	// endpoint FIFO/in-order delivery — the CD_8 cross-GPU invalidation
+	// deadlock. interGPURDMANoC is reused as the request NoC; interGPURDMARspNoC
+	// is the response NoC. Req ports only talk to req ports and rsp ports only
+	// to rsp ports, so the two NoCs are fully self-contained (no message crosses
+	// between them).
+	interGPURDMARspNoC  *networkconnector.Connector
+	rdmaRspNoCSwitchIDs []int
 
 	// interGPUNoCBW is the per-direction bandwidth (GB/s, decimal) of each
 	// inter-GPU NoC link. It maps directly to the flit byte size: BW =
@@ -298,6 +312,18 @@ func (b Builder) WithInterGPUNoCBandwidth(gbPerSec int) Builder {
 	return b
 }
 
+// WithInterGPUNoCSplitRsp, when true, routes inter-GPU RDMA requests and
+// responses over TWO independent NoCs (request lane {RDMADataReq, RDMAInvReq}
+// vs response lane {RDMADataRsp, RDMAInvRsp}) instead of one shared endpoint.
+// This removes the request-blocks-response head-of-line deadlock (the CD_8
+// cross-GPU invalidation hang). Only effective when the inter-GPU NoC is
+// selected (WithInterGPUNoC(true)). Default false keeps the single shared NoC
+// so prior results stay comparable.
+func (b Builder) WithInterGPUNoCSplitRsp(v bool) Builder {
+	b.interGPUNoCSplitRsp = v
+	return b
+}
+
 // Build builds the hardware platform.
 func (b Builder) Build() *sim.Domain {
 	b.cpuGPUMemSizeMustEqual()
@@ -356,23 +382,49 @@ func (b Builder) Build() *sim.Domain {
 	// switch (in createGPU), build a dedicated link between every switch pair
 	// (all-pairs / true 1:1 point-to-point) and finalize the routing tables.
 	if b.interGPUNoC {
-		for i := 0; i < len(b.rdmaNoCSwitchIDs); i++ {
-			for j := i + 1; j < len(b.rdmaNoCSwitchIDs); j++ {
-				b.interGPURDMANoC.ConnectSwitches(
-					b.rdmaNoCSwitchIDs[i], b.rdmaNoCSwitchIDs[j],
-					b.rdmaNoCSwitchLinkParam())
-			}
+		b.finalizeRDMANoC(b.interGPURDMANoC, b.rdmaNoCSwitchIDs)
+		if b.interGPUNoCSplitRsp {
+			b.finalizeRDMANoC(b.interGPURDMARspNoC, b.rdmaRspNoCSwitchIDs)
 		}
-		b.interGPURDMANoC.EstablishRoute()
 	}
 
 	return b.platform
+}
+
+// finalizeRDMANoC builds the dedicated all-pairs (1:1 point-to-point) links
+// among the given per-GPU switches and finalizes the routing tables for one
+// RDMA NoC.
+func (b *Builder) finalizeRDMANoC(
+	noc *networkconnector.Connector, swIDs []int,
+) {
+	for i := 0; i < len(swIDs); i++ {
+		for j := i + 1; j < len(swIDs); j++ {
+			noc.ConnectSwitches(
+				swIDs[i], swIDs[j], b.rdmaNoCSwitchLinkParam())
+		}
+	}
+	noc.EstablishRoute()
 }
 
 // initInterGPURDMANoC builds the empty dedicated RDMA NoC connector. Switches
 // (one per GPU) and the device links are added in createGPU; the all-pairs
 // switch links + routing are finalized at the end of Build().
 func (b *Builder) initInterGPURDMANoC() {
+	if b.interGPUNoCSplitRsp {
+		// Two independent fabrics so a request flit can never head-of-line-block
+		// a response flit. interGPURDMANoC carries requests; interGPURDMARspNoC
+		// carries responses.
+		b.interGPURDMANoC = b.makeRDMANoCConnector("InterGPURDMAReqNoC")
+		b.interGPURDMARspNoC = b.makeRDMANoCConnector("InterGPURDMARspNoC")
+		return
+	}
+	b.interGPURDMANoC = b.makeRDMANoCConnector("InterGPURDMANoC")
+}
+
+// makeRDMANoCConnector builds one empty bandwidth-modeled RDMA NoC connector.
+// Switches (one per GPU) and device links are added per-GPU in createGPU; the
+// all-pairs switch links + routing are finalized at the end of Build().
+func (b *Builder) makeRDMANoCConnector(name string) *networkconnector.Connector {
 	// flit bytes = per-direction GB/s (decimal) at 1 GHz / 1 channel, so the
 	// bandwidth flag value maps straight through (300 => 300 GB/s each way).
 	flitBytes := b.interGPUNoCBW
@@ -384,8 +436,9 @@ func (b *Builder) initInterGPURDMANoC() {
 		WithMonitor(b.simulation.GetMonitor()).
 		WithDefaultFreq(1 * sim.GHz).
 		WithFlitSize(flitBytes)
-	b.interGPURDMANoC = &conn
-	b.interGPURDMANoC.NewNetwork("InterGPURDMANoC")
+	c := &conn
+	c.NewNetwork(name)
+	return c
 }
 
 // rdmaNoCDeviceLinkParam describes the GPU<->its-own-switch link.
@@ -663,13 +716,35 @@ func (b *Builder) createGPU(
 	}
 
 	if b.interGPUNoC {
-		// [INTER-GPU NOC] This GPU gets its own switch; its 4 RDMA ports attach
-		// to it via one endpoint. Dedicated all-pairs switch links + routing
-		// are finalized at the end of Build().
-		swID := b.interGPURDMANoC.AddSwitch()
-		b.interGPURDMANoC.ConnectDevice(
-			swID, rdmaPortList, b.rdmaNoCDeviceLinkParam())
-		b.rdmaNoCSwitchIDs = append(b.rdmaNoCSwitchIDs, swID)
+		if b.interGPUNoCSplitRsp {
+			// [INTER-GPU NOC — REQ/RSP SPLIT] Requests and responses ride
+			// separate NoCs so a request flit can never head-of-line-block a
+			// response. Req lane: {RDMADataReq, RDMAInvReq}; rsp lane:
+			// {RDMADataRsp, RDMAInvRsp}. Each lane gets its own switch on its
+			// own NoC; all-pairs links + routing finalized at end of Build().
+			reqPorts := collectPortsByName(gpu,
+				[]string{"RDMADataReq", "RDMAInvReq"})
+			rspPorts := collectPortsByName(gpu,
+				[]string{"RDMADataRsp", "RDMAInvRsp"})
+
+			reqSw := b.interGPURDMANoC.AddSwitch()
+			b.interGPURDMANoC.ConnectDevice(
+				reqSw, reqPorts, b.rdmaNoCDeviceLinkParam())
+			b.rdmaNoCSwitchIDs = append(b.rdmaNoCSwitchIDs, reqSw)
+
+			rspSw := b.interGPURDMARspNoC.AddSwitch()
+			b.interGPURDMARspNoC.ConnectDevice(
+				rspSw, rspPorts, b.rdmaNoCDeviceLinkParam())
+			b.rdmaRspNoCSwitchIDs = append(b.rdmaRspNoCSwitchIDs, rspSw)
+		} else {
+			// [INTER-GPU NOC] This GPU gets its own switch; its 4 RDMA ports
+			// attach to it via one endpoint. Dedicated all-pairs switch links +
+			// routing are finalized at the end of Build().
+			swID := b.interGPURDMANoC.AddSwitch()
+			b.interGPURDMANoC.ConnectDevice(
+				swID, rdmaPortList, b.rdmaNoCDeviceLinkParam())
+			b.rdmaNoCSwitchIDs = append(b.rdmaNoCSwitchIDs, swID)
+		}
 	} else {
 		// [INTER-GPU DIRECTCONN] Plug the 4 RDMA ports into the bandwidth-less
 		// directconnection.
@@ -690,6 +765,19 @@ func (b *Builder) createGPU(
 	// b.gpus = append(b.gpus, gpu)
 
 	return gpu
+}
+
+// collectPortsByName resolves the named ports on a GPU domain, skipping any
+// that are absent (nil). Used to partition the RDMA ports into request and
+// response lanes for the split-NoC wiring.
+func collectPortsByName(gpu *sim.Domain, names []string) []sim.Port {
+	out := make([]sim.Port, 0, len(names))
+	for _, n := range names {
+		if p := gpu.GetPortByName(n); p != nil {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func (b *Builder) configRDMAEngine(
