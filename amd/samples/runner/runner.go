@@ -8,7 +8,9 @@ import (
 	// Enable profiling
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/sarchlab/akita/v4/mem/cache/optdirectory"
 	"github.com/sarchlab/akita/v4/mem/cache/superdirectory"
@@ -49,6 +51,7 @@ type Runner struct {
 	pageMigrationPolicy        uint64
 	coherenceDirectory         uint64
 	idealDirectory             bool
+	cd8DeadlockFix             bool
 	cdFifoReplacement          bool
 	sdNumBanks                 int
 	sdLog2NumSubEntry          uint64
@@ -127,6 +130,7 @@ func (r *Runner) buildTimingPlatform() {
 		WithPageMigrationPolicy(r.pageMigrationPolicy).
 		WithCoherenceDirectory(r.coherenceDirectory).
 		WithIdealDirectory(r.idealDirectory).
+		WithCD8DeadlockFix(r.cd8DeadlockFix).
 		WithCDFifoReplacement(r.cdFifoReplacement).
 		WithSDNumBanks(r.sdNumBanks).
 		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).
@@ -199,7 +203,30 @@ func (r *Runner) AddBenchmarkWithoutSettingGPUsToUse(b benchmarks.Benchmark) {
 }
 
 // Run runs the benchmark
+// installDeadlockDumpSignal lets `kill -USR1 <pid>` print every component's
+// registered stop-hook dump (optdirectory / writebackcoh DEADLOCK-DUMP) to
+// stdout ON DEMAND — without waiting for the engine to reach "No More Event".
+// Use it to inspect a hung run: at the freeze, send SIGUSR1 and read out.txt.
+func (r *Runner) installDeadlockDumpSignal() {
+	se, ok := r.simulation.GetEngine().(*sim.SerialEngine)
+	if !ok {
+		return
+	}
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGUSR1)
+	go func() {
+		for range ch {
+			fmt.Printf("\n===== [SIGUSR1] on-demand deadlock dump =====\n")
+			for _, h := range se.OnStopHooks {
+				h()
+			}
+			fmt.Printf("===== [SIGUSR1] end =====\n")
+		}
+	}()
+}
+
 func (r *Runner) Run() {
+	r.installDeadlockDumpSignal()
 	r.Driver().Run()
 
 	var wg sync.WaitGroup

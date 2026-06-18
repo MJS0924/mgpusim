@@ -87,6 +87,9 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
+var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", true,
+	"Enable the L2 invDirtyFlushReserve that fixes the CD_8 16KB cross-GPU "+
+		"writeback deadlock. false reproduces the original deadlock.")
 var cdFifoReplacement = flag.Bool("cd-fifo-replacement", false,
 	"Use FIFO replacement for CD/HMG directory (paper §4.2 baseline). REC unaffected.")
 var sdNumBanks = flag.Int("sd-num-banks", 5,
@@ -250,6 +253,7 @@ func (r *Runner) parseGPUFlag() {
 	// }
 
 	r.idealDirectory = *idealDirectory
+	r.cd8DeadlockFix = *cd8DeadlockFix
 	r.cdFifoReplacement = *cdFifoReplacement
 	r.sdNumBanks = *sdNumBanks
 	r.sdLog2NumSubEntry = *sdLog2NumSubEntry

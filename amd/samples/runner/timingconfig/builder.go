@@ -54,6 +54,7 @@ type Builder struct {
 	globalStorage     *mem.Storage
 	rdmaAddressMapper *mem.BankedAddressPortMapper
 	idealDirectory    bool
+	cd8DeadlockFix    bool
 	cdFifoReplacement bool
 
 	// gpuDeviceIDs are the NVLink-fabric device IDs returned by
@@ -197,6 +198,12 @@ func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
 
 func (b Builder) WithIdealDirectory(bo bool) Builder {
 	b.idealDirectory = bo
+	return b
+}
+
+// WithCD8DeadlockFix toggles the CD_8 16KB cross-GPU writeback deadlock fix.
+func (b Builder) WithCD8DeadlockFix(on bool) Builder {
+	b.cd8DeadlockFix = on
 	return b
 }
 
@@ -564,6 +571,7 @@ func (b *Builder) createGPUBuilder(
 		WithPageMigrationPolicy(b.pageMigrationPolicy).
 		WithCoherenceDirectory(b.coherenceDirectory).
 		WithIdealDirectory(b.idealDirectory).
+		WithCD8DeadlockFix(b.cd8DeadlockFix).
 		WithCDFifoReplacement(b.cdFifoReplacement).
 		WithCohDirSize(b.sdByteSize).
 		WithSDNumBanks(b.sdNumBanks).
