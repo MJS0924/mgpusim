@@ -87,9 +87,11 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
-var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", true,
+var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", false,
 	"Enable the L2 invDirtyFlushReserve that fixes the CD_8 16KB cross-GPU "+
-		"writeback deadlock. false reproduces the original deadlock.")
+		"writeback deadlock. DEFAULT OFF (original behavior, so non-stencil "+
+		"baselines stay unchanged); set =true to enable the fix. The generated "+
+		"stencil2d scripts pass =true explicitly.")
 var cdFifoReplacement = flag.Bool("cd-fifo-replacement", false,
 	"Use FIFO replacement for CD/HMG directory (paper §4.2 baseline). REC unaffected.")
 var sdNumBanks = flag.Int("sd-num-banks", 5,
