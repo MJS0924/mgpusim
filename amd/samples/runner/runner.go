@@ -52,6 +52,8 @@ type Runner struct {
 	coherenceDirectory         uint64
 	idealDirectory             bool
 	cd8DeadlockFix             bool
+	sdAckReserve               bool
+	sdPeerServeReserve         bool
 	cdFifoReplacement          bool
 	sdNumBanks                 int
 	sdLog2NumSubEntry          uint64
@@ -131,6 +133,8 @@ func (r *Runner) buildTimingPlatform() {
 		WithCoherenceDirectory(r.coherenceDirectory).
 		WithIdealDirectory(r.idealDirectory).
 		WithCD8DeadlockFix(r.cd8DeadlockFix).
+		WithSDAckReserve(r.sdAckReserve).
+		WithSDPeerServeReserve(r.sdPeerServeReserve).
 		WithCDFifoReplacement(r.cdFifoReplacement).
 		WithSDNumBanks(r.sdNumBanks).
 		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).

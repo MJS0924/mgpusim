@@ -92,6 +92,16 @@ var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", false,
 		"writeback deadlock. DEFAULT OFF (original behavior, so non-stencil "+
 		"baselines stay unchanged); set =true to enable the fix. The generated "+
 		"stencil2d scripts pass =true explicitly.")
+var sdAckReserve = flag.Bool("sd-ack-reserve", false,
+	"Enable the L2 ackDisplaceReserve that fixes the SD 9-bank cross-GPU "+
+		"eviction-credit deadlock (peer-incoming write displacement victim gets a "+
+		"dedicated bounded placement lane so its freeing WriteDoneRsp/ack is never "+
+		"blocked). DEFAULT OFF (original behavior); set =true to enable the fix.")
+var sdPeerServeReserve = flag.Bool("sd-peer-serve-reserve", false,
+	"Reserve bounded SuperDir inflight headroom for the peer-serve origin so the "+
+		"ack-producing post-invalidation write drain can never be starved by pinned "+
+		"own evictions. Fixes the SD 9-bank cross-GPU capacity-cycle deadlock. "+
+		"DEFAULT OFF (byte-identical original behavior); set =true to enable the fix.")
 var cdFifoReplacement = flag.Bool("cd-fifo-replacement", false,
 	"Use FIFO replacement for CD/HMG directory (paper §4.2 baseline). REC unaffected.")
 var sdNumBanks = flag.Int("sd-num-banks", 5,
@@ -256,6 +266,8 @@ func (r *Runner) parseGPUFlag() {
 
 	r.idealDirectory = *idealDirectory
 	r.cd8DeadlockFix = *cd8DeadlockFix
+	r.sdAckReserve = *sdAckReserve
+	r.sdPeerServeReserve = *sdPeerServeReserve
 	r.cdFifoReplacement = *cdFifoReplacement
 	r.sdNumBanks = *sdNumBanks
 	r.sdLog2NumSubEntry = *sdLog2NumSubEntry

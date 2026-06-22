@@ -102,6 +102,8 @@ type Builder struct {
 	coherenceDirectory  uint64
 	idealDirectory      bool
 	cd8DeadlockFix      bool // [CD8-DEADLOCK FIX] toggle the L2 invDirtyFlushReserve
+	sdAckReserve        bool // [SD-ACK-RESERVE] toggle the L2 ackDisplaceReserve
+	sdPeerServeReserve  bool // [SD-PEER-SERVE-RESERVE] toggle the SuperDir peer-serve inflight reserve
 	cdFifoReplacement   bool // FIFO replacement for CD/HMG (paper §4.2 baseline)
 }
 
@@ -255,6 +257,19 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 // WithCD8DeadlockFix toggles the L2 invDirtyFlushReserve (CD_8 deadlock fix).
 func (b Builder) WithCD8DeadlockFix(on bool) Builder {
 	b.cd8DeadlockFix = on
+	return b
+}
+
+// WithSDAckReserve toggles the L2 ackDisplaceReserve (SD 9-bank deadlock fix).
+func (b Builder) WithSDAckReserve(on bool) Builder {
+	b.sdAckReserve = on
+	return b
+}
+
+// WithSDPeerServeReserve toggles the SuperDir peer-serve inflight reserve
+// (SD 9-bank capacity-cycle deadlock fix).
+func (b Builder) WithSDPeerServeReserve(on bool) Builder {
+	b.sdPeerServeReserve = on
 	return b
 }
 
@@ -1159,9 +1174,16 @@ func (b *Builder) buildCoherenceDirectory() {
 				}
 			}
 		}
+		// [SD-PEER-SERVE-RESERVE] bounded peer-serve headroom = maxInflightRequest/4
+		// (=64; mirrors the 3/4-1/4 ORIGIN-SPLIT convention). 0 when flag off.
+		sdPeerServeReserveN := 0
+		if b.sdPeerServeReserve {
+			sdPeerServeReserveN = 256 / 4
+		}
 		dir := superdirectory.MakeBuilder().
 			WithEngine(b.simulation.GetEngine()).
 			WithFreq(b.freq).
+			WithSDPeerServeReserve(sdPeerServeReserveN).
 			WithDeviceID(int(b.gpuID)).
 			WithLog2BlockSize(b.log2CacheLineSize).
 			WithLog2PageSize(b.log2PageSize).
@@ -1433,6 +1455,7 @@ func (b *Builder) buildL2Caches() {
 			WithFreq(b.freq).
 			WithDeviceID(int(b.gpuID)).
 			WithCD8DeadlockFix(b.cd8DeadlockFix). // [CD8-DEADLOCK FIX] toggle
+			WithAckReserveFix(b.sdAckReserve).   // [SD-ACK-RESERVE] toggle
 			WithLog2BlockSize(b.log2CacheLineSize).
 			WithLog2PageSize(b.log2PageSize).
 			WithLog2UnitSize(b.log2CoherenceUnitSize).

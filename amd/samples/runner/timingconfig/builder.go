@@ -53,9 +53,11 @@ type Builder struct {
 	platform          *sim.Domain
 	globalStorage     *mem.Storage
 	rdmaAddressMapper *mem.BankedAddressPortMapper
-	idealDirectory    bool
-	cd8DeadlockFix    bool
-	cdFifoReplacement bool
+	idealDirectory     bool
+	cd8DeadlockFix     bool
+	sdAckReserve       bool
+	sdPeerServeReserve bool
+	cdFifoReplacement  bool
 
 	// gpuDeviceIDs are the NVLink-fabric device IDs returned by
 	// nvlink.Connector.PlugInDevice when each GPU is attached. Used to
@@ -204,6 +206,20 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 // WithCD8DeadlockFix toggles the CD_8 16KB cross-GPU writeback deadlock fix.
 func (b Builder) WithCD8DeadlockFix(on bool) Builder {
 	b.cd8DeadlockFix = on
+	return b
+}
+
+// WithSDAckReserve toggles the SD 9-bank cross-GPU eviction-credit deadlock fix
+// (L2 ackDisplaceReserve).
+func (b Builder) WithSDAckReserve(on bool) Builder {
+	b.sdAckReserve = on
+	return b
+}
+
+// WithSDPeerServeReserve toggles the SD 9-bank cross-GPU capacity-cycle deadlock
+// fix (SuperDir peer-serve inflight reserve).
+func (b Builder) WithSDPeerServeReserve(on bool) Builder {
+	b.sdPeerServeReserve = on
 	return b
 }
 
@@ -572,6 +588,8 @@ func (b *Builder) createGPUBuilder(
 		WithCoherenceDirectory(b.coherenceDirectory).
 		WithIdealDirectory(b.idealDirectory).
 		WithCD8DeadlockFix(b.cd8DeadlockFix).
+		WithSDAckReserve(b.sdAckReserve).
+		WithSDPeerServeReserve(b.sdPeerServeReserve).
 		WithCDFifoReplacement(b.cdFifoReplacement).
 		WithCohDirSize(b.sdByteSize).
 		WithSDNumBanks(b.sdNumBanks).
