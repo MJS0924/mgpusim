@@ -152,7 +152,7 @@ var interGPUNoCFlag = flag.Bool("inter-gpu-noc", false,
 		"deadlock-debugging workflow relies on (cross-GPU RDMA cannot hide in "+
 		"switch buffers). Opt-in: enables a finite-bandwidth, switched fabric "+
 		"that is more realistic but reintroduces switch-buffer backpressure.")
-var interGPUNoCBWFlag = flag.Int("inter-gpu-noc-bw", 300,
+var interGPUNoCBWFlag = flag.Int("inter-gpu-noc-bw", 1800,
 	"Per-direction bandwidth (GB/s, decimal) of each inter-GPU NoC link "+
 		"when -inter-gpu-noc is set. E.g. 300 => 300 GB/s each way per "+
 		"dedicated GPU-pair link. Modeled via the flit serialization "+

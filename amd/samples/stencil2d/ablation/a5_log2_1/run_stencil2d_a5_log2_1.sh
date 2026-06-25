@@ -7,13 +7,15 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/ra
 ../../stencil2d \
     -timing \
     -unified-gpus=1,2,3,4 \
+    -inter-gpu-noc \
+    -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
     -coherence-directory=SuperDirectory \
     -sd-num-banks=9 \
     -sd-log2-sub-entry=1 \
     -log2-page-size=12 \
-    -row=4000 -col=4000 -iter=4 \
+    -row=4000 -col=4000 -iter=4 -cd8-deadlock-fix=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/stencil2d/stencil2d_a5_log2_1_per_window.csv \

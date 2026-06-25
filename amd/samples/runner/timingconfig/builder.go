@@ -122,7 +122,7 @@ const (
 	// dedicated pair link. For the REC paper's "300 GB/s bi-directional
 	// aggregate" reading instead, pass 150 (= 150 GB/s each way); for binary
 	// GiB/s (322 GB/s decimal), pass 322.
-	interGPUNoCDefaultBW = 300
+	interGPUNoCDefaultBW = 1800
 
 	// interGPUNoCBufSize is the per-port flit buffer depth on the NoC switches
 	// and endpoints. Sized >= the directory inflight caps (numPeerInflight /

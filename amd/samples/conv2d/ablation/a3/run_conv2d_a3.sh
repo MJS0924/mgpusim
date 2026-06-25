@@ -7,12 +7,14 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A3_no_promote_at_evict
 ../../conv2d \
     -timing \
     -unified-gpus=1,2,3,4 \
+    -inter-gpu-noc \
+    -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
     -coherence-directory=SuperDirectory \
+    -sd-promote-at-evict=false \
     -sd-disable-rsb=true \
     -sd-disable-cbf=true \
-    -sd-promote-at-evict=false \
     -log2-page-size=12 \
     -N=1 -C=3 -H=333 -W=333 -output-channel=3 -kernel-height=7 -kernel-width=7 \
     -per-window-snapshot \

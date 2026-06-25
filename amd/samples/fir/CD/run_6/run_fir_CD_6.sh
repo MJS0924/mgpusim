@@ -5,6 +5,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/fir/CD/run_6
 ../../fir \
     -timing \
     -unified-gpus=1,2,3,4 \
+    -inter-gpu-noc \
+    -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
     -coherence-directory=CoherenceDirectory \

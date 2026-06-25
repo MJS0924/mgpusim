@@ -1073,7 +1073,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			// Total directory access = dirLatency + bankLatency (default 1) = 10.
 			// SD branch uses 17 for a +8 cycle hierarchical-lookup penalty (=18 total).
 			WithDirectoryLatency(9).
-			// Phase 2 inv-emit budget: at most 2 InvReqs per output
+			// Phase 2 inv-emit budget: at most 8 InvReqs per output
 			// channel per cycle (RDMA-bound, local-L2-bound, and — since
 			// [INV-FIDELITY C4] — the dir→peer-dir fan-out lane via
 			// RDMAInvPort, each counted separately). Models the directory
@@ -1081,7 +1081,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			// unbounded "drain until port full" baseline missed. The peer
 			// lane previously drained unbudgeted at up to 16 InvReq/cycle.
 			// Same value applied to SD/REC for fair comparison.
-			WithMaxInvEmitPerCycle(2).
+			WithMaxInvEmitPerCycle(8).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -1123,7 +1123,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			// Total = dirLatency + bankLatency (default 1) = 10. See CD branch.
 			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget — same value as other variants.
-			WithMaxInvEmitPerCycle(2).
+			WithMaxInvEmitPerCycle(8).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -1265,7 +1265,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithDirectoryLatency(9).
 			// Phase 2 inv-emit budget — same value as CD/SD for fair
 			// cross-variant comparison.
-			WithMaxInvEmitPerCycle(2).
+			WithMaxInvEmitPerCycle(8).
 			// [ITER1 FIX 20260605] REC outgoing-remote sub-cap DISABLED (0).
 			// stencil2d empirical results:
 			//   L2 outgoing cap (384) only:      sim 19.80 ms hang
@@ -1371,7 +1371,7 @@ func (b *Builder) buildCoherenceDirectory() {
 			// Phase 2 inv-emit budget — same value as CD/SD/REC for
 			// fair comparison. Previously omitted from this HMG branch
 			// only, causing HMG to behave like Phase-2-disabled CD_2.
-			WithMaxInvEmitPerCycle(2).
+			WithMaxInvEmitPerCycle(8).
 			WithAddressMapperType("interleaved").
 			// WithToRDMA(b.rdmaEngine.RDMADataInside.AsRemote()).
 			WithIdealDirectory(b.idealDirectory).
@@ -1455,7 +1455,7 @@ func (b *Builder) buildL2Caches() {
 			WithFreq(b.freq).
 			WithDeviceID(int(b.gpuID)).
 			WithCD8DeadlockFix(b.cd8DeadlockFix). // [CD8-DEADLOCK FIX] toggle
-			WithAckReserveFix(b.sdAckReserve).   // [SD-ACK-RESERVE] toggle
+			WithAckReserveFix(b.sdAckReserve).    // [SD-ACK-RESERVE] toggle
 			WithLog2BlockSize(b.log2CacheLineSize).
 			WithLog2PageSize(b.log2PageSize).
 			WithLog2UnitSize(b.log2CoherenceUnitSize).
