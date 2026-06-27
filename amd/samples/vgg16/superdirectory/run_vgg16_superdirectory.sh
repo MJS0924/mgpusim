@@ -11,6 +11,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/v
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=32 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/superdirectory/rawdata/mem_path/vgg16_superdirectory_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/vgg16_superdirectory.txt
 

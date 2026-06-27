@@ -51,6 +51,17 @@ this number is not given or a invalid number is given number, a random port
 will be used.`)
 var disableAkitaRTM = flag.Bool("disable-rtm", false, "Disable the AkitaRTM monitoring portal")
 
+var memLatencyTrace = flag.Bool("mem-latency-trace", false,
+	"Enable the per-request memory-latency path tracer. Records, for every "+
+		"AddressTranslator-issued memory request, the full path it took "+
+		"(L1/Directory/L2/RDMA/DRAM/remote-L2) and the latency, bucketed by "+
+		"where the access was served. Pure observation: simulated timing is "+
+		"identical whether on or off. Default OFF. Composes with "+
+		"-coalescability-heatmap and -per-window-snapshot.")
+var memLatencyTraceOutput = flag.String("mem-latency-trace-output", "",
+	"Output CSV path for the mem-latency path tracer (-mem-latency-trace). "+
+		"Defaults to <metric-file-name>_mem_path.csv in the CWD.")
+
 var analyzerNameFlag = flag.String("analyzer-name", "",
 	"The name of the analyzer to use.")
 
@@ -102,6 +113,11 @@ var sdPeerServeReserve = flag.Bool("sd-peer-serve-reserve", false,
 		"ack-producing post-invalidation write drain can never be starved by pinned "+
 		"own evictions. Fixes the SD 9-bank cross-GPU capacity-cycle deadlock. "+
 		"DEFAULT OFF (byte-identical original behavior); set =true to enable the fix.")
+var l2PeerEvictHeadroom = flag.Bool("l2-peer-evict-headroom", false,
+	"Raise the L2 peer-serve eviction inflight credit + admit caps (32/256 -> 4096) so the "+
+		"ack-producing cross-GPU serve path always has headroom. Fixes the 4-GPU symmetric "+
+		"peer-eviction credit deadlock (minerva large-batch gradient flood). DEFAULT OFF "+
+		"(byte-identical original behavior); set =true to enable the fix.")
 var cdFifoReplacement = flag.Bool("cd-fifo-replacement", false,
 	"Use FIFO replacement for CD/HMG directory (paper §4.2 baseline). REC unaffected.")
 var sdNumBanks = flag.Int("sd-num-banks", 5,
@@ -210,6 +226,9 @@ func (r *Runner) parseSimulationFlags() {
 	if *useUnifiedMemoryFlag {
 		r.UseUnifiedMemory = true
 	}
+
+	r.memLatencyTrace = *memLatencyTrace
+	r.memLatencyTraceOutput = *memLatencyTraceOutput
 }
 
 func (r *Runner) parseGPUFlag() {
@@ -268,6 +287,7 @@ func (r *Runner) parseGPUFlag() {
 	r.cd8DeadlockFix = *cd8DeadlockFix
 	r.sdAckReserve = *sdAckReserve
 	r.sdPeerServeReserve = *sdPeerServeReserve
+	r.l2PeerEvictHeadroom = *l2PeerEvictHeadroom
 	r.cdFifoReplacement = *cdFifoReplacement
 	r.sdNumBanks = *sdNumBanks
 	r.sdLog2NumSubEntry = *sdLog2NumSubEntry

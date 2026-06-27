@@ -9,6 +9,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/REC/run_default
     -coherence-directory=REC \
     -log2-page-size=12 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/REC/run_default/metrics_mem_path.csv \
     -report-all \
     > /dev/null
 

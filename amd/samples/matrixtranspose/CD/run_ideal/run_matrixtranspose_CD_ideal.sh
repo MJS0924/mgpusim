@@ -12,11 +12,13 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixtranspose/CD/run_ideal
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=0 \
-    -width=4000 \
+    -width=8000 -cd8-deadlock-fix=true \
     -ideal-directory=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/matrixtranspose/matrixtranspose_ideal_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/matrixtranspose/matrixtranspose_ideal_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/matrixtranspose_ideal.txt
 

@@ -17,6 +17,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/CD/run_ideal
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/matrixmultiplication/matrixmultiplication_ideal_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/matrixmultiplication/matrixmultiplication_ideal_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/matrixmultiplication_ideal.txt
 

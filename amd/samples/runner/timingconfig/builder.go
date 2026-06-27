@@ -55,9 +55,10 @@ type Builder struct {
 	rdmaAddressMapper *mem.BankedAddressPortMapper
 	idealDirectory     bool
 	cd8DeadlockFix     bool
-	sdAckReserve       bool
-	sdPeerServeReserve bool
-	cdFifoReplacement  bool
+	sdAckReserve        bool
+	sdPeerServeReserve  bool
+	l2PeerEvictHeadroom bool
+	cdFifoReplacement   bool
 
 	// gpuDeviceIDs are the NVLink-fabric device IDs returned by
 	// nvlink.Connector.PlugInDevice when each GPU is attached. Used to
@@ -206,6 +207,13 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 // WithCD8DeadlockFix toggles the CD_8 16KB cross-GPU writeback deadlock fix.
 func (b Builder) WithCD8DeadlockFix(on bool) Builder {
 	b.cd8DeadlockFix = on
+	return b
+}
+
+// WithL2PeerEvictHeadroom toggles the L2 peer-serve eviction credit headroom
+// (fixes the 4-GPU symmetric peer-eviction credit deadlock).
+func (b Builder) WithL2PeerEvictHeadroom(on bool) Builder {
+	b.l2PeerEvictHeadroom = on
 	return b
 }
 
@@ -590,6 +598,7 @@ func (b *Builder) createGPUBuilder(
 		WithCD8DeadlockFix(b.cd8DeadlockFix).
 		WithSDAckReserve(b.sdAckReserve).
 		WithSDPeerServeReserve(b.sdPeerServeReserve).
+		WithL2PeerEvictHeadroom(b.l2PeerEvictHeadroom).
 		WithCDFifoReplacement(b.cdFifoReplacement).
 		WithCohDirSize(b.sdByteSize).
 		WithSDNumBanks(b.sdNumBanks).

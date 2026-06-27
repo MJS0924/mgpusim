@@ -20,6 +20,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A3_no_promote_at_evict
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/im2col/im2col_a3_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/im2col/im2col_a3_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A3_no_promote_at_evict/rawdata/text/im2col_a3.txt
 

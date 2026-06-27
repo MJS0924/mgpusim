@@ -15,10 +15,12 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_8/ra
     -sd-num-banks=2 \
     -sd-log2-sub-entry=8 \
     -log2-page-size=12 \
-    -width=4000 \
+    -width=8000 -cd8-deadlock-fix=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/matrixtranspose/matrixtranspose_a5_log2_8_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/matrixtranspose/matrixtranspose_a5_log2_8_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A5_log2sweep/log2_8/rawdata/text/matrixtranspose_a5_log2_8.txt
 

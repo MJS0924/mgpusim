@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A6_nbank/3banks/rawdat
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/bfs/bfs_a6_3banks_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/bfs/bfs_a6_3banks_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A6_nbank/3banks/rawdata/text/bfs_a6_3banks.txt
 

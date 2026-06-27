@@ -8,6 +8,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/size_sweep/size2828/REC_default
     -coherence-directory=REC \
     -x=2828 \
     -y=2828 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/REC/rawdata/mem_path/atax_size2828_REC_default_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/atax_size2828_REC_default.txt
 mv akita_sim_*.sqlite3 /root/mgpusim_home/results/REC/rawdata/sql/atax_size2828_REC_default.sqlite3 2>/dev/null

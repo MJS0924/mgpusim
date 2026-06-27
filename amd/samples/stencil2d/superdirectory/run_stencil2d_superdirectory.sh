@@ -17,6 +17,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/s
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/stencil2d/stencil2d_SD_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/stencil2d/stencil2d_SD_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/stencil2d_superdirectory.txt
 

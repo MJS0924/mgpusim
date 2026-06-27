@@ -9,6 +9,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/xor/REC/run_default
     -coherence-directory=REC \
     -log2-page-size=12 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/REC/rawdata/mem_path/xor_REC_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/xor_REC.txt
 

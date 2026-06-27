@@ -15,10 +15,12 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A6_nbank/3banks/rawdat
     -sd-num-banks=3 \
     -sd-log2-sub-entry=2 \
     -log2-page-size=12 \
-    -width=4000 \
+    -width=8000 -cd8-deadlock-fix=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/matrixtranspose/matrixtranspose_a6_3banks_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/matrixtranspose/matrixtranspose_a6_3banks_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A6_nbank/3banks/rawdata/text/matrixtranspose_a6_3banks.txt
 

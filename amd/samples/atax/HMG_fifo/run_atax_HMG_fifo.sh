@@ -11,6 +11,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/HMG_fifo
     -log2-page-size=12 \
     -cd-fifo-replacement \
     -x=8000 -y=8000 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/HMG/rawdata/mem_path/atax_HMG_fifo_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/HMG/rawdata/text/atax_HMG_fifo.txt
 

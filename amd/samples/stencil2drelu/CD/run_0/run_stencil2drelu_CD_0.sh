@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/CD/run_0
     -log2-page-size=12 \
     -coherence-unit-size=0 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/CD/run_0/metrics_mem_path.csv \
     -report-all \
     > /dev/null
 

@@ -11,6 +11,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/CD/run_0_fifo
     -coherence-unit-size=0 \
     -cd-fifo-replacement \
     -x=8000 -y=8000 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/atax_CD_0_fifo_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/atax_CD_0_fifo.txt
 

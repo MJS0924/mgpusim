@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A6_nbank/9banks/rawdat
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/conv2d/conv2d_a6_9banks_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/conv2d/conv2d_a6_9banks_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A6_nbank/9banks/rawdata/text/conv2d_a6_9banks.txt
 

@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/REC/run_halfset
     -log2-page-size=12 \
      \
     -rec-half-set \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/REC/run_halfset/metrics_mem_path.csv \
     -report-all \
     > /dev/null
 

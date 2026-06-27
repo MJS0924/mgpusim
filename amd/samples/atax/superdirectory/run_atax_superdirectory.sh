@@ -11,6 +11,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/a
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
     -x=8000 -y=8000 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/superdirectory/rawdata/mem_path/atax_superdirectory_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/atax_superdirectory.txt
 

@@ -14,6 +14,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/r
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/relu/relu_SD_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/relu/relu_SD_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/relu_superdirectory.txt
 

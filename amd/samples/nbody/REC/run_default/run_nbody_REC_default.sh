@@ -12,6 +12,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/nbody/REC/run_default
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/nbody/nbody_REC_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/nbody/nbody_REC_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/nbody_REC.txt
 

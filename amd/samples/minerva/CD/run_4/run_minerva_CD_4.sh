@@ -12,10 +12,12 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/CD/run_4
     -coherence-directory=CoherenceDirectory \
     -log2-page-size=12 \
     -coherence-unit-size=4 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/minerva/minerva_CD_4_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/minerva/minerva_CD_4_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/minerva_CD_4.txt
 

@@ -13,6 +13,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/nbody/CD/run_2
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/nbody/nbody_CD_2_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/nbody/nbody_CD_2_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/nbody_CD_2.txt
 

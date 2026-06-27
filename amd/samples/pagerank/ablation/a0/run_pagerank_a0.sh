@@ -18,6 +18,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A0_no_promote_at_evict
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/pagerank/pagerank_a0_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/pagerank/pagerank_a0_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A0_no_promote_at_evict/rawdata/text/pagerank_a0.txt
 

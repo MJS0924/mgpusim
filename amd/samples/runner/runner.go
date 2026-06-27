@@ -4,6 +4,8 @@ package runner
 import (
 	"fmt"
 	"log"
+	"reflect"
+	"unsafe"
 
 	// Enable profiling
 	_ "net/http/pprof"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/sarchlab/akita/v4/mem/cache/optdirectory"
 	"github.com/sarchlab/akita/v4/mem/cache/superdirectory"
+	"github.com/sarchlab/akita/v4/mem/mempath"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
@@ -54,6 +57,7 @@ type Runner struct {
 	cd8DeadlockFix             bool
 	sdAckReserve               bool
 	sdPeerServeReserve         bool
+	l2PeerEvictHeadroom        bool
 	cdFifoReplacement          bool
 	sdNumBanks                 int
 	sdLog2NumSubEntry          uint64
@@ -74,6 +78,10 @@ type Runner struct {
 	interGPUNoC                bool
 	interGPUNoCBW              int
 	interGPUNoCSplitRsp        bool
+
+	memLatencyTrace       bool
+	memLatencyTraceOutput string
+	memPathCollector      *memPathCollector
 }
 
 // Init initializes the platform simulate
@@ -135,6 +143,7 @@ func (r *Runner) buildTimingPlatform() {
 		WithCD8DeadlockFix(r.cd8DeadlockFix).
 		WithSDAckReserve(r.sdAckReserve).
 		WithSDPeerServeReserve(r.sdPeerServeReserve).
+		WithL2PeerEvictHeadroom(r.l2PeerEvictHeadroom).
 		WithCDFifoReplacement(r.cdFifoReplacement).
 		WithSDNumBanks(r.sdNumBanks).
 		WithSDLog2NumSubEntry(r.sdLog2NumSubEntry).
@@ -158,6 +167,15 @@ func (r *Runner) buildTimingPlatform() {
 
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()
+	}
+
+	// Mem-latency path tracer: enable the package-level switch and register
+	// the global collector sink before the platform is built. Pure
+	// observation — does not affect simulated timing. Off by default.
+	if r.memLatencyTrace {
+		r.memPathCollector = newMemPathCollector()
+		mempath.Enabled = true
+		mempath.Collect = r.memPathCollector.Add
 	}
 
 	r.platform = b.Build()
@@ -210,6 +228,59 @@ func (r *Runner) AddBenchmarkWithoutSettingGPUsToUse(b benchmarks.Benchmark) {
 // installDeadlockDumpSignal lets `kill -USR1 <pid>` print every component's
 // registered stop-hook dump (optdirectory / writebackcoh DEADLOCK-DUMP) to
 // stdout ON DEMAND — without waiting for the engine to reach "No More Event".
+// dumpBuffersOf reflects over a component or port, finding sim.Buffer fields
+// (including unexported internal queues) and printing any that are non-empty,
+// with the head message's id/src/dst/type. Mirrors monitoring.Monitor buffer
+// discovery so the on-stop dump sees the same buffers as /api/hangdetector.
+func dumpBuffersOf(label string, c any) {
+	defer func() { _ = recover() }()
+	v := reflect.ValueOf(c)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return
+	}
+	v = v.Elem()
+	if v.Kind() != reflect.Struct {
+		return
+	}
+	bufferType := reflect.TypeOf((*sim.Buffer)(nil)).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Type() != bufferType || !field.CanAddr() {
+			continue
+		}
+		b, ok := reflect.NewAt(field.Type(),
+			unsafe.Pointer(field.UnsafeAddr())).Elem().Interface().(sim.Buffer)
+		if !ok || b == nil || b.Size() == 0 {
+			continue
+		}
+		fmt.Printf("[BUFDUMP] %s :: %s  %d/%d", label, b.Name(), b.Size(), b.Capacity())
+		if head := b.Peek(); head != nil {
+			if msg, ok := head.(sim.Msg); ok {
+				m := msg.Meta()
+				fmt.Printf("  head{id=%s src=%v dst=%v type=%T}",
+					m.ID, m.Src, m.Dst, head)
+			} else {
+				fmt.Printf("  head{type=%T}", head)
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// dumpAllBuffers walks every component (and its ports) and prints all non-empty
+// buffers. Registered as an engine stop-hook so it fires automatically at
+// quiescence (deadlock or completion) and also via SIGUSR1.
+func (r *Runner) dumpAllBuffers() {
+	fmt.Printf("\n===== [BUFDUMP] non-empty buffers (component + port) =====\n")
+	for _, comp := range r.simulation.Components() {
+		dumpBuffersOf(comp.Name(), comp)
+		for _, p := range comp.Ports() {
+			dumpBuffersOf(comp.Name()+"."+p.Name(), p)
+		}
+	}
+	fmt.Printf("===== [BUFDUMP] end =====\n")
+}
+
 // Use it to inspect a hung run: at the freeze, send SIGUSR1 and read out.txt.
 func (r *Runner) installDeadlockDumpSignal() {
 	se, ok := r.simulation.GetEngine().(*sim.SerialEngine)
@@ -224,6 +295,7 @@ func (r *Runner) installDeadlockDumpSignal() {
 			for _, h := range se.OnStopHooks {
 				h()
 			}
+			r.dumpAllBuffers()
 			fmt.Printf("===== [SIGUSR1] end =====\n")
 		}
 	}()
@@ -259,6 +331,8 @@ func (r *Runner) Run() {
 	}
 
 	r.emitCoalescabilityReports()
+
+	r.emitMemPathReport()
 
 	r.Driver().Terminate()
 

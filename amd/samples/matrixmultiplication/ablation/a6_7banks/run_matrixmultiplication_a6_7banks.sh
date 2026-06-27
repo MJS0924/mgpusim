@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A6_nbank/7banks/rawdat
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/matrixmultiplication/matrixmultiplication_a6_7banks_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/matrixmultiplication/matrixmultiplication_a6_7banks_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A6_nbank/7banks/rawdata/text/matrixmultiplication_a6_7banks.txt
 

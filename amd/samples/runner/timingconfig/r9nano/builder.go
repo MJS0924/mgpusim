@@ -104,6 +104,7 @@ type Builder struct {
 	cd8DeadlockFix      bool // [CD8-DEADLOCK FIX] toggle the L2 invDirtyFlushReserve
 	sdAckReserve        bool // [SD-ACK-RESERVE] toggle the L2 ackDisplaceReserve
 	sdPeerServeReserve  bool // [SD-PEER-SERVE-RESERVE] toggle the SuperDir peer-serve inflight reserve
+	l2PeerEvictHeadroom bool // [L2-PEER-EVICT-HEADROOM] toggle the L2 peer-serve eviction credit headroom
 	cdFifoReplacement   bool // FIFO replacement for CD/HMG (paper §4.2 baseline)
 }
 
@@ -257,6 +258,13 @@ func (b Builder) WithIdealDirectory(bo bool) Builder {
 // WithCD8DeadlockFix toggles the L2 invDirtyFlushReserve (CD_8 deadlock fix).
 func (b Builder) WithCD8DeadlockFix(on bool) Builder {
 	b.cd8DeadlockFix = on
+	return b
+}
+
+// WithL2PeerEvictHeadroom toggles the L2 peer-serve eviction credit headroom
+// (fixes the 4-GPU symmetric peer-eviction credit deadlock).
+func (b Builder) WithL2PeerEvictHeadroom(on bool) Builder {
+	b.l2PeerEvictHeadroom = on
 	return b
 }
 
@@ -1456,6 +1464,7 @@ func (b *Builder) buildL2Caches() {
 			WithDeviceID(int(b.gpuID)).
 			WithCD8DeadlockFix(b.cd8DeadlockFix). // [CD8-DEADLOCK FIX] toggle
 			WithAckReserveFix(b.sdAckReserve).    // [SD-ACK-RESERVE] toggle
+			WithL2PeerEvictHeadroom(b.l2PeerEvictHeadroom). // [L2-PEER-EVICT-HEADROOM] toggle
 			WithLog2BlockSize(b.log2CacheLineSize).
 			WithLog2PageSize(b.log2PageSize).
 			WithLog2UnitSize(b.log2CoherenceUnitSize).

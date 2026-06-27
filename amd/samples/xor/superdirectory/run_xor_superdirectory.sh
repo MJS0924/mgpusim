@@ -11,6 +11,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/x
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/superdirectory/rawdata/mem_path/xor_superdirectory_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/xor_superdirectory.txt
 

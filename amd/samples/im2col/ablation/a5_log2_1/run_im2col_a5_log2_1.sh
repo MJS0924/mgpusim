@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/ra
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/im2col/im2col_a5_log2_1_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/im2col/im2col_a5_log2_1_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/rawdata/text/im2col_a5_log2_1.txt
 

@@ -11,11 +11,13 @@ cd /root/mgpusim_home/mgpusim/amd/samples/lenet/REC/run_halfset
     -page-migration-policy=None \
     -coherence-directory=REC \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=2 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -l2-peer-evict-headroom=true \
     -rec-half-set \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_REC_halfset_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/lenet/lenet_REC_halfset_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/lenet_REC_halfset.txt
 

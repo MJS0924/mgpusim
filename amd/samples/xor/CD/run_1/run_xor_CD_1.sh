@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/xor/CD/run_1
     -log2-page-size=12 \
     -coherence-unit-size=1 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/xor_CD_1_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/xor_CD_1.txt
 

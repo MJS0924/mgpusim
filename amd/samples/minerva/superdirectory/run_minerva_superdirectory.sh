@@ -13,7 +13,7 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/m
     -page-migration-policy=None \
     -coherence-directory=SuperDirectory \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/minerva/minerva_SD_per_window.csv \

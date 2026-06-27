@@ -11,6 +11,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/CD/run_ideal
     -coherence-unit-size=0 \
     -x=8000 -y=8000 \
     -ideal-directory=true \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/atax_ideal_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/atax_ideal.txt
 

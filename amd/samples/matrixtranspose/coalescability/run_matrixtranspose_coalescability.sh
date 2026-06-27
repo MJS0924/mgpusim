@@ -17,6 +17,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixtranspose/coalescability
     -coalescability-heatmap-dir=/root/mgpusim_home/results/coalescability/rawdata/heatmap/matrixtranspose \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/coalescability/rawdata/per_window/matrixtranspose_coalescability_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/coalescability/rawdata/mem_path/matrixtranspose_coalescability_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/coalescability/rawdata/text/matrixtranspose_coalescability.txt
 

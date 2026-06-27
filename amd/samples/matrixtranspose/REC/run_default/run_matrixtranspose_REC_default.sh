@@ -11,10 +11,12 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixtranspose/REC/run_default
     -page-migration-policy=None \
     -coherence-directory=REC \
     -log2-page-size=12 \
-    -width=4000 \
+    -width=8000 -cd8-deadlock-fix=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/matrixtranspose/matrixtranspose_REC_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/matrixtranspose/matrixtranspose_REC_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/matrixtranspose_REC.txt
 

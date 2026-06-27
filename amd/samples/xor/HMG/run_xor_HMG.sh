@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/xor/HMG
     -coherence-unit-size=2 \
     -log2-page-size=12 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/HMG/rawdata/mem_path/xor_HMG_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/HMG/rawdata/text/xor_HMG.txt
 

@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_4/ra
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/stencil2d/stencil2d_a5_log2_4_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/stencil2d/stencil2d_a5_log2_4_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A5_log2sweep/log2_4/rawdata/text/stencil2d_a5_log2_4.txt
 

@@ -11,6 +11,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/CD/run_ideal
     -coherence-unit-size=0 \
      \
     -ideal-directory=true \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/CD/run_ideal/metrics_mem_path.csv \
     -report-all \
     > /dev/null
 

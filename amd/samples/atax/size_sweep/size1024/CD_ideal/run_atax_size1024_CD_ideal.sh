@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/size_sweep/size1024/CD_ideal
     -ideal-directory=true \
     -x=1024 \
     -y=1024 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/atax_size1024_CD_ideal_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/atax_size1024_CD_ideal.txt
 mv akita_sim_*.sqlite3 /root/mgpusim_home/results/CD/rawdata/sql/atax_size1024_CD_ideal.sqlite3 2>/dev/null

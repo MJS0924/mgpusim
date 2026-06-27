@@ -13,6 +13,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/relu/CD/run_8
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/relu/relu_CD_8_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/relu/relu_CD_8_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/relu_CD_8.txt
 

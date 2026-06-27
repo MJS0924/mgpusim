@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/REC/run_halfset
     -log2-page-size=12 \
     -x=8000 -y=8000 \
     -rec-half-set \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/REC/rawdata/mem_path/atax_REC_halfset_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/atax_REC_halfset.txt
 

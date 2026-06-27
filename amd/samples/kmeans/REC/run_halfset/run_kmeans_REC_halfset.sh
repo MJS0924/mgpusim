@@ -13,6 +13,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/kmeans/REC/run_halfset
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/kmeans/kmeans_REC_halfset_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/kmeans/kmeans_REC_halfset_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/kmeans_REC_halfset.txt
 

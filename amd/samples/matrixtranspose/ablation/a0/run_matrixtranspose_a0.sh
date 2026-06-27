@@ -14,10 +14,12 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A0_no_promote_at_evict
     -coherence-directory=SuperDirectory \
     -sd-promote-at-evict=false \
     -log2-page-size=12 \
-    -width=4000 \
+    -width=8000 -cd8-deadlock-fix=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/matrixtranspose/matrixtranspose_a0_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/matrixtranspose/matrixtranspose_a0_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A0_no_promote_at_evict/rawdata/text/matrixtranspose_a0.txt
 

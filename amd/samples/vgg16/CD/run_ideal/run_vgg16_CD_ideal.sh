@@ -11,6 +11,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/CD/run_ideal
     -coherence-unit-size=0 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=32 \
     -ideal-directory=true \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/vgg16_ideal_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/vgg16_ideal.txt
 

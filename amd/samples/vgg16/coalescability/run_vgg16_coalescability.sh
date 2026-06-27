@@ -14,6 +14,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/coalescability
     -coalescability-heatmap-dir=/root/mgpusim_home/results/coalescability/rawdata/heatmap/vgg16 \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/coalescability/rawdata/per_window/vgg16_coalescability_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/coalescability/rawdata/mem_path/vgg16_coalescability_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/coalescability/rawdata/text/vgg16_coalescability.txt
 

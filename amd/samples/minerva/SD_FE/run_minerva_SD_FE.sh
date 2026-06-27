@@ -12,10 +12,12 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/SD_FE
     -coherence-directory=SuperDirectory \
     -sd-fe \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=512 \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/minerva/minerva_SD_FE_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/minerva/minerva_SD_FE_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/SD_FE/rawdata/text/minerva_SD_FE.txt
 

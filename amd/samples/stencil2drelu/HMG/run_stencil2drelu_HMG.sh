@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/HMG
     -coherence-unit-size=2 \
     -log2-page-size=12 \
      \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/mgpusim/amd/samples/stencil2drelu/HMG/metrics_mem_path.csv \
     -report-all \
     > /dev/null
 

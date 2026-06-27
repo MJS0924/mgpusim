@@ -10,6 +10,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/CD/run_2
     -log2-page-size=12 \
     -coherence-unit-size=2 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=32 \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/CD/rawdata/mem_path/vgg16_CD_2_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/CD/rawdata/text/vgg16_CD_2.txt
 

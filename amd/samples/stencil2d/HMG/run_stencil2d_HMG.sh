@@ -16,6 +16,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2d/HMG
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/stencil2d/stencil2d_HMG_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/stencil2d/stencil2d_HMG_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/HMG/rawdata/text/stencil2d_HMG.txt
 

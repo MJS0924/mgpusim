@@ -15,6 +15,8 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2d/REC/run_default
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/stencil2d/stencil2d_REC_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/stencil2d/stencil2d_REC_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/REC/rawdata/text/stencil2d_REC.txt
 
