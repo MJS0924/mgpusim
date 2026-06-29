@@ -101,6 +101,7 @@ type Builder struct {
 	pageMigrationPolicy uint64
 	coherenceDirectory  uint64
 	idealDirectory      bool
+	equalDirCap         bool // [EQUAL-DIR-CAP] CD/HMG/REC use SD's inflight cap (256/full-remote) for fair comparison
 	cd8DeadlockFix      bool // [CD8-DEADLOCK FIX] toggle the L2 invDirtyFlushReserve
 	sdAckReserve        bool // [SD-ACK-RESERVE] toggle the L2 ackDisplaceReserve
 	sdPeerServeReserve  bool // [SD-PEER-SERVE-RESERVE] toggle the SuperDir peer-serve inflight reserve
@@ -253,6 +254,35 @@ func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
 func (b Builder) WithIdealDirectory(bo bool) Builder {
 	b.idealDirectory = bo
 	return b
+}
+
+// WithEqualDirCap, when on, makes CD/HMG/REC use the SAME inflight-fetch cap
+// as SuperDirectory (total=256, cross-GPU remote=full budget) so the
+// directory-admission throughput is matched across variants. Off (default)
+// preserves each variant's historical caps (CD/HMG total=128/remote=96,
+// REC total=128/remote=full). See -equal-dir-cap.
+func (b Builder) WithEqualDirCap(on bool) Builder {
+	b.equalDirCap = on
+	return b
+}
+
+// dirInflightCap returns the total inflight-fetch cap for CD/HMG/REC:
+// SD's 256 when equalDirCap is on, else the variant's historical base.
+func (b Builder) dirInflightCap(base int) int {
+	if b.equalDirCap {
+		return 256
+	}
+	return base
+}
+
+// dirRemoteSubCap returns the cross-GPU outgoing fetch sub-cap for CD/HMG:
+// 0 (disabled = full budget, SD parity) when equalDirCap is on, else base
+// (-1 = auto 3/4).
+func (b Builder) dirRemoteSubCap(base int) int {
+	if b.equalDirCap {
+		return 0
+	}
+	return base
 }
 
 // WithCD8DeadlockFix toggles the L2 invDirtyFlushReserve (CD_8 deadlock fix).
@@ -1097,6 +1127,9 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithFIFOReplacement(b.cdFifoReplacement).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
+			// [EQUAL-DIR-CAP] match SD's inflight cap when -equal-dir-cap.
+			WithMaxInflightFetch(b.dirInflightCap(128)).
+			WithMaxOutgoingRemoteInflight(b.dirRemoteSubCap(-1)).
 			Build(fmt.Sprintf("%s.CohDir", b.name))
 
 		b.simulation.RegisterComponent(dir)
@@ -1293,6 +1326,9 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithHalfSet(b.recHalfSet).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
+			// [EQUAL-DIR-CAP] match SD's total inflight cap when -equal-dir-cap
+			// (REC's remote sub-cap is already disabled above).
+			WithMaxInflightFetch(b.dirInflightCap(128)).
 			Build(fmt.Sprintf("%s.RECDir", b.name))
 
 		b.simulation.RegisterComponent(dir)
@@ -1386,6 +1422,9 @@ func (b *Builder) buildCoherenceDirectory() {
 			WithFIFOReplacement(b.cdFifoReplacement).
 			WithReadMask(b.readMask).
 			WithDirtyMask(b.dirtyMask).
+			// [EQUAL-DIR-CAP] match SD's inflight cap when -equal-dir-cap.
+			WithMaxInflightFetch(b.dirInflightCap(128)).
+			WithMaxOutgoingRemoteInflight(b.dirRemoteSubCap(-1)).
 			Build(fmt.Sprintf("%s.HMGDir", b.name))
 
 		b.simulation.RegisterComponent(dir)

@@ -54,6 +54,7 @@ type Builder struct {
 	globalStorage     *mem.Storage
 	rdmaAddressMapper *mem.BankedAddressPortMapper
 	idealDirectory     bool
+	equalDirCap        bool
 	cd8DeadlockFix     bool
 	sdAckReserve        bool
 	sdPeerServeReserve  bool
@@ -201,6 +202,13 @@ func (b Builder) WithCoherenceDirectory(dir uint64) Builder {
 
 func (b Builder) WithIdealDirectory(bo bool) Builder {
 	b.idealDirectory = bo
+	return b
+}
+
+// WithEqualDirCap forwards the -equal-dir-cap flag (CD/HMG/REC use SD's
+// inflight cap for fair comparison) to the r9nano builder.
+func (b Builder) WithEqualDirCap(on bool) Builder {
+	b.equalDirCap = on
 	return b
 }
 
@@ -595,6 +603,7 @@ func (b *Builder) createGPUBuilder(
 		WithPageMigrationPolicy(b.pageMigrationPolicy).
 		WithCoherenceDirectory(b.coherenceDirectory).
 		WithIdealDirectory(b.idealDirectory).
+		WithEqualDirCap(b.equalDirCap).
 		WithCD8DeadlockFix(b.cd8DeadlockFix).
 		WithSDAckReserve(b.sdAckReserve).
 		WithSDPeerServeReserve(b.sdPeerServeReserve).

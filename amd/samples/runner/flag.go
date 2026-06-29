@@ -98,6 +98,10 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
+var equalDirCap = flag.Bool("equal-dir-cap", false,
+	"Make CD/HMG/REC use SuperDirectory's inflight-fetch cap "+
+		"(total=256, cross-GPU remote=full budget) for fair cross-variant "+
+		"comparison. Default off = each variant's historical caps.")
 var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", false,
 	"Enable the L2 invDirtyFlushReserve that fixes the CD_8 16KB cross-GPU "+
 		"writeback deadlock. DEFAULT OFF (original behavior, so non-stencil "+
@@ -284,6 +288,7 @@ func (r *Runner) parseGPUFlag() {
 	// }
 
 	r.idealDirectory = *idealDirectory
+	r.equalDirCap = *equalDirCap
 	r.cd8DeadlockFix = *cd8DeadlockFix
 	r.sdAckReserve = *sdAckReserve
 	r.sdPeerServeReserve = *sdPeerServeReserve

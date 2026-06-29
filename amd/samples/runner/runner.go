@@ -54,6 +54,7 @@ type Runner struct {
 	pageMigrationPolicy        uint64
 	coherenceDirectory         uint64
 	idealDirectory             bool
+	equalDirCap                bool
 	cd8DeadlockFix             bool
 	sdAckReserve               bool
 	sdPeerServeReserve         bool
@@ -140,6 +141,7 @@ func (r *Runner) buildTimingPlatform() {
 		WithPageMigrationPolicy(r.pageMigrationPolicy).
 		WithCoherenceDirectory(r.coherenceDirectory).
 		WithIdealDirectory(r.idealDirectory).
+		WithEqualDirCap(r.equalDirCap).
 		WithCD8DeadlockFix(r.cd8DeadlockFix).
 		WithSDAckReserve(r.sdAckReserve).
 		WithSDPeerServeReserve(r.sdPeerServeReserve).
