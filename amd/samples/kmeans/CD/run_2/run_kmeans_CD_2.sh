@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/kmeans/CD/run_2
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -log2-page-size=12 \
     -coherence-unit-size=2 \
     -points=500000 -features=32 -clusters=100 -max-iter=2 \

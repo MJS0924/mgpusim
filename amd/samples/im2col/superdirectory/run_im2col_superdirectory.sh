@@ -8,10 +8,10 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/i
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=SuperDirectory \
+    -coherence-directory=SuperDirectory -sd-promote-at-evict=false \
     -log2-page-size=12 \
     -N=1 -C=3 -H=735 -W=735 -kernel-height=3 -kernel-width=3 \
     -per-window-snapshot \

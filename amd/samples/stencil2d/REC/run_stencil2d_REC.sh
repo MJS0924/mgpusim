@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][stencil2d] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/stencil2d/REC/run_default/run_stencil2d_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/stencil2d/REC/run_halfset/run_stencil2d_REC_halfset.sh"
 wait
 echo "=== [REC][stencil2d] 완료 ==="

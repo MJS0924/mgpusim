@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2d/REC/run_halfset
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -row=4000 -col=4000 -iter=4 -cd8-deadlock-fix=true \
     -rec-half-set \

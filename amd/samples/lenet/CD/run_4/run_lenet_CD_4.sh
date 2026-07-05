@@ -6,13 +6,13 @@ cd /root/mgpusim_home/mgpusim/amd/samples/lenet/CD/run_4
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -log2-page-size=12 \
     -coherence-unit-size=4 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -l2-peer-evict-headroom=true \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=2048 -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_CD_4_per_window.csv \

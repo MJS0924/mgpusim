@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/spmv/coalescability
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=false \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -dim=92681 -sparsity=0.000931 \

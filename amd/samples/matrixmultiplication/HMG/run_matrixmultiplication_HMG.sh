@@ -6,16 +6,18 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/HMG
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=HMG \
+    -coherence-directory=HMG -equal-dir-cap=true \
     -coherence-unit-size=2 \
     -log2-page-size=12 \
     -x=2500 -y=2500 -z=2500 \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/matrixmultiplication/matrixmultiplication_HMG_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/matrixmultiplication/matrixmultiplication_HMG_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/HMG/rawdata/text/matrixmultiplication_HMG.txt
 

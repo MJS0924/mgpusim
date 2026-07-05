@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/relu/REC/run_default
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -length=16000000 \
     -per-window-snapshot \

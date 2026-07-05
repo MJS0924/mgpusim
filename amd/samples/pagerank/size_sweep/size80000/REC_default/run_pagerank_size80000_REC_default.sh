@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/size_sweep/size80000/REC_defa
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -node=80000 \
     -sparsity=0.005 \
     -iterations=3 \

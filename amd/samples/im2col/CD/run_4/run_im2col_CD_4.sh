@@ -6,10 +6,10 @@ cd /root/mgpusim_home/mgpusim/amd/samples/im2col/CD/run_4
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -log2-page-size=12 \
     -coherence-unit-size=4 \
     -N=1 -C=3 -H=735 -W=735 -kernel-height=3 -kernel-width=3 \

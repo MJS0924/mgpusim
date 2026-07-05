@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/conv2d/REC/run_halfset
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -N=1 -C=3 -H=333 -W=333 -output-channel=3 -kernel-height=7 -kernel-width=7 \
     -rec-half-set \

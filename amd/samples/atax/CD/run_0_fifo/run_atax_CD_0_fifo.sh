@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/CD/run_0_fifo
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -log2-page-size=12 \
     -coherence-unit-size=0 \
     -cd-fifo-replacement \

@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/coalescability
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -x=1800 -y=1800 -z=1800 \

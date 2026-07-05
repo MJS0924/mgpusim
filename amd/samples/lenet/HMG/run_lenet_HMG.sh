@@ -6,13 +6,13 @@ cd /root/mgpusim_home/mgpusim/amd/samples/lenet/HMG
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=HMG \
+    -coherence-directory=HMG -equal-dir-cap=true \
     -coherence-unit-size=2 \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -l2-peer-evict-headroom=true \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=2048 -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/lenet/lenet_HMG_per_window.csv \

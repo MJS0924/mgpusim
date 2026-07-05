@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/CD/run_1
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -log2-page-size=12 \
     -coherence-unit-size=1 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=32 \

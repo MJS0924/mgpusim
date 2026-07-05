@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][bfs] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/bfs/REC/run_default/run_bfs_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/bfs/REC/run_halfset/run_bfs_REC_halfset.sh"
 wait
 echo "=== [REC][bfs] 완료 ==="

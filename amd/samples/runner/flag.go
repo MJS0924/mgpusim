@@ -98,10 +98,11 @@ var coherenceUnitSize = flag.Uint64("coherence-unit-size", 0,
 	"Log2 of coherence mgmt. unit size")
 var idealDirectory = flag.Bool("ideal-directory", false,
 	"Use Ideal directory(no eviction)")
-var equalDirCap = flag.Bool("equal-dir-cap", false,
+var equalDirCap = flag.Bool("equal-dir-cap", true,
 	"Make CD/HMG/REC use SuperDirectory's inflight-fetch cap "+
 		"(total=256, cross-GPU remote=full budget) for fair cross-variant "+
-		"comparison. Default off = each variant's historical caps.")
+		"comparison. Default ON (equal caps across directory variants); "+
+		"set =false for a variant's historical caps (e.g. spmv exclusion).")
 var cd8DeadlockFix = flag.Bool("cd8-deadlock-fix", false,
 	"Enable the L2 invDirtyFlushReserve that fixes the CD_8 16KB cross-GPU "+
 		"writeback deadlock. DEFAULT OFF (original behavior, so non-stencil "+
@@ -146,8 +147,9 @@ var sdUseRsbHintAlloc = flag.Bool("sd-use-rsb-hint-alloc", true,
 	"SuperDirectory: doWriteMiss honors RSB hint when allocating new entries (instead of always finest). Default true (S4 fix).")
 var sdRecordSilentEvict = flag.Bool("sd-rsb-record-evict", true,
 	"SuperDirectory: every non-finest eviction (write-miss/promote/demote) writes the victim bank into RSB, not just eviction-with-sharers. Default true (S5 fix).")
-var sdPromoteAtEvict = flag.Bool("sd-promote-at-evict", true,
-	"SuperDirectory: §4 v1 — enable promote-at-evict at the finest bank.")
+var sdPromoteAtEvict = flag.Bool("sd-promote-at-evict", false,
+	"SuperDirectory: §4 v1 — enable promote-at-evict at the finest bank. "+
+		"Default OFF (정당성 약함으로 비활성; 켜려면 -sd-promote-at-evict=true).")
 var sdPromoteAtEvictBiasVictim = flag.Bool("sd-promote-at-evict-bias-victim", true,
 	"SuperDirectory: §4 v2 — bias finest-bank victim selection toward promote-eligible entries. Only effective when -sd-promote-at-evict is set.")
 var sdPromoteAtEvictMultiBank = flag.Bool("sd-promote-at-evict-multi-bank", false,

@@ -8,10 +8,10 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/ra
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=SuperDirectory \
+    -coherence-directory=SuperDirectory -sd-promote-at-evict=false \
     -sd-num-banks=9 \
     -sd-log2-sub-entry=1 \
     -log2-page-size=12 \
@@ -19,6 +19,8 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/ra
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results_ablation/per_window/matrixmultiplication/matrixmultiplication_a5_log2_1_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results_ablation/mem_path/matrixmultiplication/matrixmultiplication_a5_log2_1_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/rawdata/text/matrixmultiplication_a5_log2_1.txt
 

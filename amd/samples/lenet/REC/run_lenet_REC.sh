@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][lenet] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/lenet/REC/run_default/run_lenet_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/lenet/REC/run_halfset/run_lenet_REC_halfset.sh"
 wait
 echo "=== [REC][lenet] 완료 ==="

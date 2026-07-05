@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/spmv/REC/run_halfset
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=false \
     -log2-page-size=12 \
     -dim=131072 -sparsity=0.000931 \
     -rec-half-set \

@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/size_sweep/size15
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -x=1500 \
     -y=1500 \
     -z=1500 \

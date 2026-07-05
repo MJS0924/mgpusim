@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/coalescability
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -epoch=1 -max-batch-per-epoch=1 -batch-size=256 \

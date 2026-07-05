@@ -6,10 +6,10 @@ cd /root/mgpusim_home/mgpusim/amd/samples/bfs/REC/run_default
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -node=940000 -degree=32 \
     -per-window-snapshot \

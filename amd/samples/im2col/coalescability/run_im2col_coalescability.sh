@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/im2col/coalescability
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -N=1 -C=3 -H=520 -W=520 -kernel-height=3 -kernel-width=3 \

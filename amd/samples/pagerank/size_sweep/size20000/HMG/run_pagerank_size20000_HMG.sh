@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/size_sweep/size20000/HMG
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=HMG \
+    -coherence-directory=HMG -equal-dir-cap=true \
     -coherence-unit-size=2 \
     -node=20000 \
     -sparsity=0.005 \

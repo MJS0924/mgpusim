@@ -6,10 +6,10 @@ cd /root/mgpusim_home/mgpusim/amd/samples/stencil2d/REC/run_default
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -row=4000 -col=4000 -iter=4 -cd8-deadlock-fix=true \
     -per-window-snapshot \

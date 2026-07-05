@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/kmeans/REC/run_halfset
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -points=500000 -features=32 -clusters=100 -max-iter=2 \
     -rec-half-set \

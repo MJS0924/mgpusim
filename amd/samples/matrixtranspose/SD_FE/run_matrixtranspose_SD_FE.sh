@@ -6,10 +6,10 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixtranspose/SD_FE
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=SuperDirectory \
+    -coherence-directory=SuperDirectory -sd-promote-at-evict=false \
     -sd-fe \
     -log2-page-size=12 \
     -width=8000 -cd8-deadlock-fix=true \

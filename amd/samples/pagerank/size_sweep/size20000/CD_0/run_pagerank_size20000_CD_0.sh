@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/pagerank/size_sweep/size20000/CD_0
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -node=20000 \
     -sparsity=0.005 \

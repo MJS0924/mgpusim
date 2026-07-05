@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/atax/size_sweep/size1024/REC_default
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -x=1024 \
     -y=1024 \
     -mem-latency-trace \

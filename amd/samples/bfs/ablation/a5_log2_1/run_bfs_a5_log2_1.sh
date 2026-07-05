@@ -8,10 +8,10 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results_ablation/A5_log2sweep/log2_1/ra
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=SuperDirectory \
+    -coherence-directory=SuperDirectory -sd-promote-at-evict=false \
     -sd-num-banks=9 \
     -sd-log2-sub-entry=1 \
     -log2-page-size=12 \

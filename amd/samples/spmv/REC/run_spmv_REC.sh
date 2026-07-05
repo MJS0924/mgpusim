@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][spmv] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/spmv/REC/run_default/run_spmv_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/spmv/REC/run_halfset/run_spmv_REC_halfset.sh"
 wait
 echo "=== [REC][spmv] 완료 ==="

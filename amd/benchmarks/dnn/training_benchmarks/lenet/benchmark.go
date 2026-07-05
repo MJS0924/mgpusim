@@ -88,23 +88,11 @@ func (b *Benchmark) defineNetwork(gpuID int) {
 				[]int{0, 0},
 				[]int{2, 2},
 			),
-			layers.NewConv2D(
-				3,
-				to,
-				[]int{6, 14, 14},
-				[]int{16, 6, 5, 5},
-				[]int{1, 1},
-				[]int{0, 0}),
+			// conv/relu/pool 1회 후: pool 출력 [6,14,14] flatten=6*14*14=1176
+			// → FC(1176->120) → ReLU → FC(120->10)
+			layers.NewFullyConnectedLayer(3, to, 1176, 120),
 			layers.NewReluLayer(to),
-			layers.NewAvgPoolingLayer(to,
-				[]int{2, 2},
-				[]int{0, 0},
-				[]int{2, 2}),
-			layers.NewFullyConnectedLayer(6, to, 400, 120),
-			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(8, to, 120, 84),
-			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(10, to, 84, 10),
+			layers.NewFullyConnectedLayer(5, to, 120, 10),
 		},
 	}
 

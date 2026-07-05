@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][im2col] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/im2col/REC/run_default/run_im2col_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/im2col/REC/run_halfset/run_im2col_REC_halfset.sh"
 wait
 echo "=== [REC][im2col] 완료 ==="

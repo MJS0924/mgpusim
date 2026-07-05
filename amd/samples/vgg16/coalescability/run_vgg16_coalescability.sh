@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/vgg16/coalescability
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -epoch=1 -max-batch-per-epoch=2 -batch-size=16 \

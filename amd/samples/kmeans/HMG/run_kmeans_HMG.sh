@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/kmeans/HMG
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=HMG \
+    -coherence-directory=HMG -equal-dir-cap=true \
     -coherence-unit-size=2 \
     -log2-page-size=12 \
     -points=500000 -features=32 -clusters=100 -max-iter=2 \

@@ -5,7 +5,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/matrixmultiplication/size_sweep/size30
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
     -log2-page-size=12 \
-    -coherence-directory=HMG \
+    -coherence-directory=HMG -equal-dir-cap=true \
     -coherence-unit-size=2 \
     -x=3000 \
     -y=3000 \

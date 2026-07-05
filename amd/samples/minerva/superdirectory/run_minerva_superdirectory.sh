@@ -8,15 +8,17 @@ export EVENT_LOG_PATH=/root/mgpusim_home/results/superdirectory/rawdata/events/m
     -timing \
     -unified-gpus=1,2,3,4 \
     -inter-gpu-noc \
-    -inter-gpu-noc-bw=1800 \
+    -inter-gpu-noc-bw=300 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=SuperDirectory \
+    -coherence-directory=SuperDirectory -sd-promote-at-evict=false \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=2048 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
     -per-window-snapshot \
     -window-instructions=50000 \
     -per-window-output=/root/mgpusim_home/results/per_window/minerva/minerva_SD_per_window.csv \
+    -mem-latency-trace \
+    -mem-latency-trace-output=/root/mgpusim_home/results/mem_path/minerva/minerva_SD_mem_path.csv \
     -report-all \
     > /root/mgpusim_home/results/superdirectory/rawdata/text/minerva_superdirectory.txt
 

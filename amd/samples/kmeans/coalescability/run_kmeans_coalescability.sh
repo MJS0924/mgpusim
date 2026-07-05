@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/kmeans/coalescability
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=CoherenceDirectory \
+    -coherence-directory=CoherenceDirectory -equal-dir-cap=true \
     -coherence-unit-size=0 \
     -log2-page-size=12 \
     -points=250000 -features=32 -clusters=100 -max-iter=2 \

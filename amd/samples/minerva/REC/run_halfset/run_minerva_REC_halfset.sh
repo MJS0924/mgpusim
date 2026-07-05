@@ -9,9 +9,9 @@ cd /root/mgpusim_home/mgpusim/amd/samples/minerva/REC/run_halfset
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
-    -epoch=1 -max-batch-per-epoch=1 -batch-size=3072 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
+    -epoch=1 -max-batch-per-epoch=1 -batch-size=2048 -cd8-deadlock-fix=true -sd-peer-serve-reserve=true -l2-peer-evict-headroom=true \
     -rec-half-set \
     -per-window-snapshot \
     -window-instructions=50000 \

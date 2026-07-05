@@ -9,7 +9,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/fir/REC/run_halfset
     -inter-gpu-noc-bw=1800 \
     -use-unified-memory \
     -page-migration-policy=None \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
     -length=16000000 \
     -rec-half-set \

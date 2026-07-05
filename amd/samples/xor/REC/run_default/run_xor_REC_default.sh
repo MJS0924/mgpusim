@@ -6,7 +6,7 @@ cd /root/mgpusim_home/mgpusim/amd/samples/xor/REC/run_default
     -timing \
     -unified-gpus=1,2,3,4 \
     -use-unified-memory \
-    -coherence-directory=REC \
+    -coherence-directory=REC -equal-dir-cap=true \
     -log2-page-size=12 \
      \
     -mem-latency-trace \

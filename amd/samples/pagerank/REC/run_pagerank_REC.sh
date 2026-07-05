@@ -16,6 +16,5 @@ run_bg() {
 
 echo "=== [REC][pagerank] 시작 (병렬 최대 ${MAX_PARALLEL}) ==="
 run_bg "default" "/root/mgpusim_home/mgpusim/amd/samples/pagerank/REC/run_default/run_pagerank_REC_default.sh"
-run_bg "halfset" "/root/mgpusim_home/mgpusim/amd/samples/pagerank/REC/run_halfset/run_pagerank_REC_halfset.sh"
 wait
 echo "=== [REC][pagerank] 완료 ==="

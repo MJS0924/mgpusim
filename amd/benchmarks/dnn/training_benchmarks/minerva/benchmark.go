@@ -89,13 +89,10 @@ func (b *Benchmark) defineNetwork(gpuID int) {
 	//   → 8× less compute per heavy kernel, 4× less weight traffic.
 	network := training.Network{
 		Layers: []layers.Layer{
+			// FC(784->2048) -> ReLU -> FC(2048->10)
 			layers.NewFullyConnectedLayer(0, to, 784, 2048),
 			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(2, to, 2048, 2048),
-			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(4, to, 2048, 2048),
-			layers.NewReluLayer(to),
-			layers.NewFullyConnectedLayer(6, to, 2048, 10),
+			layers.NewFullyConnectedLayer(2, to, 2048, 10),
 		},
 	}
 
